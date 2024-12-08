@@ -1,0 +1,313 @@
+# Importación de módulos abstractos y aleatorios
+from abc import ABC, abstractmethod  # Para crear clases abstractas
+import random  # Para generar turnos aleatorios en el combate
+
+class Personaje(ABC):
+    """
+    Clase abstracta base para todos los personajes del juego.
+    Implementa funcionalidades básicas y define métodos a ser implementados por subclases.
+    
+    Principios de POO aplicados:
+    - Abstracción: Define una interfaz común para todos los personajes
+    - Encapsulamiento: Atributos privados y métodos de acceso controlado
+    """
+    def __init__(self, nombre, stats):
+        """
+        Constructor de personaje con encapsulamiento de atributos.
+        
+        Args:
+            nombre (str): Nombre del personaje
+            stats (dict): Diccionario con estadísticas iniciales
+        """
+        # Atributos privados con guión bajo
+        self._nombre = nombre
+        self._stats = {
+            'fuerza': stats['fuerza'],
+            'inteligencia': stats['inteligencia'], 
+            'defensa': stats['defensa'],
+            'vida': stats['vida']
+        }
+        self._nivel = 1  # Nivel inicial
+    
+    @property
+    def nombre(self):
+        """
+        Getter para el nombre con encapsulamiento.
+        Permite acceso de solo lectura al nombre del personaje.
+        
+        Returns:
+            str: Nombre del personaje
+        """
+        return self._nombre
+    
+    def mostrar_atributos(self):
+        """
+        Método de abstracción para mostrar los atributos del personaje.
+        Imprime de manera formateada las estadísticas.
+        """
+        print(f"Nombre: {self._nombre}")
+        print(f"Nivel: {self._nivel}")
+        for stat, valor in self._stats.items():
+            print(f"· {stat.capitalize()}: {valor}")
+    
+    def subir_nivel(self, incrementos):
+        """
+        Método para incrementar las estadísticas y nivel del personaje.
+        
+        Args:
+            incrementos (dict): Diccionario con incrementos para cada estadística
+        """
+        # Incrementa solo las estadísticas válidas
+        for stat, incremento in incrementos.items():
+            if stat in self._stats:
+                self._stats[stat] += incremento
+        
+        # Aumenta el nivel
+        self._nivel += 1
+        print(f"{self._nombre} ha subido al nivel {self._nivel}")
+    
+    def esta_vivo(self):
+        """
+        Verifica si el personaje tiene vida.
+        
+        Returns:
+            bool: True si vida > 0, False en otro caso
+        """
+        return self._stats['vida'] > 0
+    
+    def recibir_daño(self, daño):
+        """
+        Calcula y aplica el daño recibido, considerando la defensa.
+        
+        Args:
+            daño (int): Puntos de daño a recibir
+        """
+        # Calcula daño final restando defensa, sin valores negativos
+        daño_final = max(0, daño - self._stats['defensa'])
+        
+        # Reduce vida, sin ir por debajo de 0
+        self._stats['vida'] = max(0, self._stats['vida'] - daño_final)
+        print(f"{self._nombre} recibe {daño_final} puntos de daño")
+    
+    @abstractmethod
+    def calcular_daño(self, objetivo):
+        """
+        Método abstracto para cálculo de daño.
+        Debe ser implementado por cada tipo de personaje.
+        
+        Args:
+            objetivo (Personaje): Personaje que recibe el ataque
+        
+        Returns:
+            int: Puntos de daño a infligir
+        """
+        pass
+    
+    def atacar(self, objetivo):
+        """
+        Método de ataque con validaciones polimórficas.
+        
+        Args:
+            objetivo (Personaje): Personaje a atacar
+        """
+        # Valida que el objetivo sea un personaje
+        if not isinstance(objetivo, Personaje):
+            raise ValueError("Solo se puede atacar a otros personajes")
+        
+        # Verifica que el atacante esté vivo
+        if not self.esta_vivo():
+            print(f"{self._nombre} no puede atacar porque está muerto")
+            return
+        
+        # Calcula y aplica daño
+        daño = self.calcular_daño(objetivo)
+        objetivo.recibir_daño(daño)
+        print(f"{self._nombre} ataca a {objetivo.nombre}")
+
+class Guerrero(Personaje):
+    """
+    Clase Guerrero que hereda de Personaje.
+    Especializada en combate físico con armas.
+    
+    Principios de POO aplicados:
+    - Herencia: Extiende la clase Personaje
+    - Polimorfismo: Implementa métodos de manera específica
+    """
+    def __init__(self, nombre, stats, arma):
+        """
+        Constructor de Guerrero.
+        
+        Args:
+            nombre (str): Nombre del guerrero
+            stats (dict): Estadísticas iniciales
+            arma (Arma): Objeto arma del guerrero
+        """
+        # Llama al constructor del padre
+        super().__init__(nombre, stats)
+        self._arma = arma  # Arma específica del guerrero
+    
+    def calcular_daño(self, objetivo):
+        """
+        Implementación polimorfica del cálculo de daño.
+        Basado en fuerza y potencia del arma.
+        
+        Args:
+            objetivo (Personaje): Personaje a atacar
+        
+        Returns:
+            int: Puntos de daño calculados
+        """
+        return self._stats['fuerza'] * self._arma.potencia
+    
+    def cambiar_arma(self, nueva_arma):
+        """
+        Método para cambiar el arma del guerrero.
+        
+        Args:
+            nueva_arma (Arma): Nuevo objeto arma
+        """
+        self._arma = nueva_arma
+        print(f"{self._nombre} cambió su arma a {nueva_arma.nombre}")
+
+class Mago(Personaje):
+    """
+    Clase Mago que hereda de Personaje.
+    Especializada en ataques mágicos.
+    
+    Principios de POO aplicados:
+    - Herencia: Extiende la clase Personaje
+    - Polimorfismo: Implementa métodos de manera específica
+    """
+    def __init__(self, nombre, stats, grimorio):
+        """
+        Constructor de Mago.
+        
+        Args:
+            nombre (str): Nombre del mago
+            stats (dict): Estadísticas iniciales
+            grimorio (Grimorio): Objeto grimorio del mago
+        """
+        super().__init__(nombre, stats)
+        self._grimorio = grimorio
+        self._mana = 100  # Puntos de magia
+    
+    def calcular_daño(self, objetivo):
+        """
+        Implementación polimorfica del cálculo de daño.
+        Basado en inteligencia y poder del grimorio.
+        
+        Args:
+            objetivo (Personaje): Personaje a atacar
+        
+        Returns:
+            int: Puntos de daño calculados
+        """
+        return self._stats['inteligencia'] * self._grimorio.poder
+    
+    def lanzar_hechizo_especial(self, objetivo):
+        """
+        Método especial de mago para lanzar hechizos poderosos.
+        
+        Args:
+            objetivo (Personaje): Objetivo del hechizo
+        """
+        # Verifica suficiente maná
+        if self._mana >= 50:
+            daño_especial = self._stats['inteligencia'] * 2
+            objetivo.recibir_daño(daño_especial)
+            self._mana -= 50
+            print(f"{self._nombre} lanza un hechizo especial")
+
+class Arma:
+    """
+    Clase para representar armas de los guerreros.
+    Encapsula propiedades básicas de un arma.
+    """
+    def __init__(self, nombre, potencia):
+        """
+        Constructor de Arma.
+        
+        Args:
+            nombre (str): Nombre del arma
+            potencia (int): Potencia de daño del arma
+        """
+        self.nombre = nombre
+        self.potencia = potencia
+
+class Grimorio:
+    """
+    Clase para representar grimorios de magos.
+    Encapsula propiedades básicas de un grimorio mágico.
+    """
+    def __init__(self, nombre, poder):
+        """
+        Constructor de Grimorio.
+        
+        Args:
+            nombre (str): Nombre del grimorio
+            poder (int): Poder mágico del grimorio
+        """
+        self.nombre = nombre
+        self.poder = poder
+
+def simular_combate(personaje1, personaje2):
+    """
+    Función para simular un combate entre dos personajes.
+    Implementa turnos aleatorios hasta que uno muera.
+    
+    Args:
+        personaje1 (Personaje): Primer personaje del combate
+        personaje2 (Personaje): Segundo personaje del combate
+    """
+    turno = 1
+    while personaje1.esta_vivo() and personaje2.esta_vivo():
+        print(f"\n--- Turno {turno} ---")
+        
+        # Selección aleatoria de atacante
+        if random.choice([True, False]):
+            personaje1.atacar(personaje2)
+        else:
+            personaje2.atacar(personaje1)
+        
+        turno += 1
+    
+    # Determinar ganador
+    if personaje1.esta_vivo():
+        print(f"\n¡{personaje1.nombre} ha ganado el combate!")
+    else:
+        print(f"\n¡{personaje2.nombre} ha ganado el combate!")
+
+# Creación de objetos de apoyo
+espada_legendaria = Arma("Espada Legendaria", 5)
+grimorio_arcano = Grimorio("Grimorio Arcano", 4)
+
+# Creación de personajes
+guerrero = Guerrero("Aragorn", 
+    {
+        'fuerza': 20, 
+        'inteligencia': 10, 
+        'defensa': 15, 
+        'vida': 100
+    }, 
+    espada_legendaria
+)
+
+mago = Mago("Gandalf", 
+    {
+        'fuerza': 5, 
+        'inteligencia': 25, 
+        'defensa': 10, 
+        'vida': 80
+    }, 
+    grimorio_arcano
+)
+
+# Demostración de funcionalidades
+print("Atributos iniciales:")
+guerrero.mostrar_atributos()
+print("\n")
+mago.mostrar_atributos()
+
+# Simulación de combate
+print("\n--- Inicio del Combate ---")
+simular_combate(guerrero, mago)
