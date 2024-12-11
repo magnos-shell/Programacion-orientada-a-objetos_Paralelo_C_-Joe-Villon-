@@ -1,0 +1,69 @@
+def ingresar_temperaturas():
+    """
+    Función para ingresar las temperaturas diarias de la semana.
+    
+    Returns:
+    list: Una lista con 7 temperaturas ingresadas por el usuario
+    """
+    temperaturas = []
+    dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    
+    print("Por favor, ingrese las temperaturas diarias:")
+    
+    for dia in dias:
+        while True:
+            try:
+                temperatura = float(input(f"Temperatura de {dia}: "))
+                temperaturas.append(temperatura)
+                break
+            except ValueError:
+                print("Error: Ingrese un valor numérico válido.")
+    
+    return temperaturas
+
+def calcular_promedio_semanal(temperaturas):
+    """
+    Calcula el promedio de temperaturas de la semana.
+    
+    Args:
+    temperaturas (list): Lista de temperaturas diarias
+    
+    Returns:
+    float: Promedio de temperaturas
+    """
+    return sum(temperaturas) / len(temperaturas)
+
+def mostrar_resultados(temperaturas, promedio):
+    """
+    Muestra las temperaturas ingresadas y el promedio semanal.
+    
+    Args:
+    temperaturas (list): Lista de temperaturas diarias
+    promedio (float): Promedio semanal de temperaturas
+    """
+    print("\n--- Resumen de Temperaturas ---")
+    dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    
+    for dia, temperatura in zip(dias, temperaturas):
+        print(f"{dia}: {temperatura}°C")
+    
+    print(f"\nPromedio semanal: {promedio:.2f}°C")
+
+def main():
+    """
+    Función principal que coordina el flujo del programa.
+    """
+    print("Calculadora de Promedio de Temperaturas Semanales")
+    
+    # Ingresar temperaturas
+    temperaturas = ingresar_temperaturas()
+    
+    # Calcular promedio
+    promedio = calcular_promedio_semanal(temperaturas)
+    
+    # Mostrar resultados
+    mostrar_resultados(temperaturas, promedio)
+
+# Ejecutar el programa principal
+if __name__ == "__main__":
+    main()
