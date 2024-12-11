@@ -1,0 +1,135 @@
+class RegistroTemperaturas:
+    """
+    Clase base para manejar el registro de temperaturas semanales.
+    """
+    def __init__(self, nombre_ubicacion):
+        """
+        Constructor de la clase que inicializa el registro de temperaturas.
+        
+        Args:
+        nombre_ubicacion (str): Nombre de la ubicación para el registro de temperaturas
+        """
+        self._ubicacion = nombre_ubicacion
+        self._temperaturas = [None] * 7
+        self._dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    
+    def ingresar_temperatura(self, dia, temperatura):
+        """
+        Método para ingresar la temperatura de un día específico.
+        
+        Args:
+        dia (int): Índice del día (0-6)
+        temperatura (float): Temperatura del día
+        
+        Raises:
+        ValueError: Si el día está fuera de rango o la temperatura no es válida
+        """
+        if dia < 0 or dia > 6:
+            raise ValueError("El día debe estar entre 0 y 6")
+        
+        if not isinstance(temperatura, (int, float)):
+            raise ValueError("La temperatura debe ser un valor numérico")
+        
+        self._temperaturas[dia] = float(temperatura)
+    
+    def calcular_promedio(self):
+        """
+        Calcula el promedio de temperaturas de la semana.
+        
+        Returns:
+        float: Promedio de temperaturas, o None si no hay suficientes datos
+        """
+        temperaturas_validas = [temp for temp in self._temperaturas if temp is not None]
+        
+        if len(temperaturas_validas) == 0:
+            return None
+        
+        return sum(temperaturas_validas) / len(temperaturas_validas)
+    
+    def obtener_temperaturas(self):
+        """
+        Devuelve una copia de las temperaturas registradas.
+        
+        Returns:
+        list: Lista de temperaturas
+        """
+        return self._temperaturas.copy()
+    
+    def mostrar_reporte(self):
+        """
+        Genera un reporte detallado de las temperaturas registradas.
+        
+        Returns:
+        str: Reporte formateado de temperaturas
+        """
+        reporte = f"Reporte de Temperaturas - {self._ubicacion}\n"
+        reporte += "-" * 40 + "\n"
+        
+        for dia, temperatura in zip(self._dias, self._temperaturas):
+            if temperatura is not None:
+                reporte += f"{dia}: {temperatura}°C\n"
+            else:
+                reporte += f"{dia}: Sin registrar\n"
+        
+        promedio = self.calcular_promedio()
+        if promedio is not None:
+            reporte += f"\nPromedio Semanal: {promedio:.2f}°C"
+        else:
+            reporte += "\nNo hay suficientes datos para calcular el promedio"
+        
+        return reporte
+
+class RegistroTemperaturasExtendido(RegistroTemperaturas):
+    """
+    Clase extendida que añade funcionalidades adicionales de análisis.
+    """
+    def temperatura_maxima(self):
+        """
+        Encuentra la temperatura máxima registrada.
+        
+        Returns:
+        float or None: Temperatura máxima o None si no hay datos
+        """
+        temperaturas_validas = [temp for temp in self._temperaturas if temp is not None]
+        return max(temperaturas_validas) if temperaturas_validas else None
+    
+    def temperatura_minima(self):
+        """
+        Encuentra la temperatura mínima registrada.
+        
+        Returns:
+        float or None: Temperatura mínima o None si no hay datos
+        """
+        temperaturas_validas = [temp for temp in self._temperaturas if temp is not None]
+        return min(temperaturas_validas) if temperaturas_validas else None
+
+def main():
+    """
+    Función principal para demostrar el uso de las clases de temperaturas.
+    """
+    # Crear una instancia de RegistroTemperaturasExtendido
+    registro = RegistroTemperaturasExtendido("Ciudad de Ejemplo")
+    
+    try:
+        # Ingresar temperaturas de ejemplo
+        registro.ingresar_temperatura(0, 22.5)  # Lunes
+        registro.ingresar_temperatura(1, 23.1)  # Martes
+        registro.ingresar_temperatura(2, 21.8)  # Miércoles
+        registro.ingresar_temperatura(3, 24.0)  # Jueves
+        registro.ingresar_temperatura(4, 22.7)  # Viernes
+        registro.ingresar_temperatura(5, 23.5)  # Sábado
+        registro.ingresar_temperatura(6, 21.9)  # Domingo
+        
+        # Mostrar el reporte completo
+        print(registro.mostrar_reporte())
+        
+        # Mostrar temperaturas adicionales
+        print(f"\nTemperatura Máxima: {registro.temperatura_maxima()}°C")
+        print(f"Temperatura Mínima: {registro.temperatura_minima()}°C")
+    
+    except ValueError as e:
+        print(f"Error: {e}")
+
+# Ejecutar el programa principal
+if __name__ == "__main__":
+    main()
