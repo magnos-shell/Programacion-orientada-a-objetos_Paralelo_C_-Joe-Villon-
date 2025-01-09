@@ -1,0 +1,134 @@
+# Importamos los módulos necesarios para manejar fechas
+from datetime import datetime, timedelta
+
+class Habitacion:
+    """Clase que representa una habitación del hotel con sus características."""
+    def __init__(self, numero: int, tipo: str, precio: float):
+        # Número identificador único de la habitación
+        self.numero = numero
+        # Tipo de habitación (individual, doble, suite)
+        self.tipo = tipo
+        # Precio por noche de la habitación
+        self.precio = precio
+        # Estado de disponibilidad actual
+        self.disponible = True
+        # Lista para almacenar el historial de reservas
+        self.reservas = []
+
+    def esta_disponible(self, fecha_inicio: datetime, fecha_fin: datetime) -> bool:
+        """
+        Verifica si hay disponibilidad en las fechas solicitadas.
+        Retorna False si hay algún solapamiento con reservas existentes.
+        """
+        for reserva in self.reservas:
+            # Comprueba si hay solapamiento de fechas con alguna reserva existente
+            if (fecha_inicio <= reserva.fecha_fin and 
+                fecha_fin >= reserva.fecha_inicio):
+                return False
+        return True
+
+class Cliente:
+    """
+    Clase que almacena la información de los clientes del hotel.
+    Mantiene un registro de todas sus reservas.
+    """
+    def __init__(self, nombre: str, email: str, telefono: str):
+        # Datos personales del cliente
+        self.nombre = nombre
+        self.email = email
+        self.telefono = telefono
+        # Lista para almacenar todas las reservas del cliente
+        self.historial_reservas = []
+
+class Reserva:
+    """
+    Clase que gestiona las reservas individuales.
+    Vincula clientes con habitaciones y gestiona las fechas y pagos.
+    """
+    def __init__(self, cliente: Cliente, habitacion: Habitacion, 
+                 fecha_inicio: datetime, fecha_fin: datetime):
+        # Información básica de la reserva
+        self.cliente = cliente
+        self.habitacion = habitacion
+        self.fecha_inicio = fecha_inicio
+        self.fecha_fin = fecha_fin
+        # Genera un código único para la reserva usando la fecha actual
+        self.codigo = f"RES{datetime.now().strftime('%Y%m%d%H%M')}"
+        # Calcula el costo total de la estancia
+        self.monto_total = self.calcular_monto()
+
+    def calcular_monto(self) -> float:
+        """
+        Calcula el monto total de la reserva multiplicando
+        el precio por noche por el número de días.
+        """
+        dias = (self.fecha_fin - self.fecha_inicio).days
+        return dias * self.habitacion.precio
+
+class Hotel:
+    """
+    Clase principal que coordina todas las operaciones del hotel.
+    Gestiona habitaciones, clientes y el proceso de reserva.
+    """
+    def __init__(self, nombre: str):
+        # Nombre del hotel
+        self.nombre = nombre
+        # Listas para almacenar todas las habitaciones y clientes
+        self.habitaciones = []
+        self.clientes = []
+
+    def agregar_habitacion(self, habitacion: Habitacion):
+        """Añade una nueva habitación al inventario del hotel."""
+        self.habitaciones.append(habitacion)
+
+    def registrar_cliente(self, cliente: Cliente):
+        """Registra un nuevo cliente en la base de datos del hotel."""
+        self.clientes.append(cliente)
+
+    def hacer_reserva(self, cliente: Cliente, tipo_habitacion: str, 
+                     fecha_inicio: datetime, fecha_fin: datetime) -> Reserva:
+        """
+        Proceso principal de reserva:
+        1. Busca habitación disponible del tipo solicitado
+        2. Crea la reserva
+        3. Actualiza los registros del cliente y la habitación
+        """
+        # Busca una habitación disponible del tipo solicitado
+        for habitacion in self.habitaciones:
+            if (habitacion.tipo == tipo_habitacion and 
+                habitacion.esta_disponible(fecha_inicio, fecha_fin)):
+                # Crea la nueva reserva
+                reserva = Reserva(cliente, habitacion, fecha_inicio, fecha_fin)
+                # Actualiza los registros
+                habitacion.reservas.append(reserva)
+                cliente.historial_reservas.append(reserva)
+                return reserva
+        # Si no hay habitaciones disponibles, lanza un error
+        raise ValueError("No hay habitaciones disponibles del tipo solicitado")
+
+# Código de ejemplo que demuestra el uso del sistema
+if __name__ == "__main__":
+    # Inicialización del hotel
+    hotel = Hotel("Hotel Python")
+
+    # Creación y registro de habitaciones
+    h1 = Habitacion(101, "individual", 100.0)
+    h2 = Habitacion(201, "doble", 180.0)
+    hotel.agregar_habitacion(h1)
+    hotel.agregar_habitacion(h2)
+
+    # Creación y registro de un cliente
+    cliente = Cliente("Ana López", "ana@email.com", "123456789")
+    hotel.registrar_cliente(cliente)
+
+    # Ejemplo de creación de una reserva
+    fecha_inicio = datetime.now()
+    fecha_fin = fecha_inicio + timedelta(days=3)
+    
+    # Intento de reserva con manejo de errores
+    try:
+        reserva = hotel.hacer_reserva(cliente, "individual", fecha_inicio, fecha_fin)
+        print(f"Reserva exitosa: {reserva.codigo}")
+        print(f"Monto total: ${reserva.monto_total}")
+    except ValueError as e:
+        print(f"Error: {e}")
