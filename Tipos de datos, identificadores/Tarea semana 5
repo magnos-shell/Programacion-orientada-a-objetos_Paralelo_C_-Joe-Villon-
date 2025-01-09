@@ -1,0 +1,99 @@
+# Programa de conversión de unidades de medida
+# Permite convertir entre diferentes unidades de longitud, peso y temperatura
+
+def convertir_longitud(valor: float, unidad_origen: str, unidad_destino: str) -> float:
+    """
+    Convierte entre diferentes unidades de longitud.
+    Unidades soportadas: metros (m), kilómetros (km), centímetros (cm)
+    """
+    # Convertir todo a metros primero
+    conversion_a_metros = {
+        "m": 1,
+        "km": 1000,
+        "cm": 0.01
+    }
+    
+    # Convertir de metros a unidad destino
+    metros = valor * conversion_a_metros[unidad_origen]
+    return metros / conversion_a_metros[unidad_destino]
+
+def convertir_peso(valor: float, unidad_origen: str, unidad_destino: str) -> float:
+    """
+    Convierte entre diferentes unidades de peso.
+    Unidades soportadas: kilogramos (kg), gramos (g), libras (lb)
+    """
+    # Convertir todo a kilogramos primero
+    conversion_a_kg = {
+        "kg": 1,
+        "g": 0.001,
+        "lb": 0.453592
+    }
+    
+    kg = valor * conversion_a_kg[unidad_origen]
+    return kg / conversion_a_kg[unidad_destino]
+
+def convertir_temperatura(valor: float, unidad_origen: str, unidad_destino: str) -> float:
+    """
+    Convierte entre diferentes unidades de temperatura.
+    Unidades soportadas: Celsius (C), Fahrenheit (F), Kelvin (K)
+    """
+    # Primero convertir a Celsius
+    if unidad_origen == "F":
+        celsius = (valor - 32) * 5/9
+    elif unidad_origen == "K":
+        celsius = valor - 273.15
+    else:
+        celsius = valor
+    
+    # Luego convertir a unidad destino
+    if unidad_destino == "F":
+        return (celsius * 9/5) + 32
+    elif unidad_destino == "K":
+        return celsius + 273.15
+    return celsius
+
+def mostrar_menu() -> str:
+    """
+    Muestra el menú de opciones y retorna la selección del usuario
+    """
+    print("\nConversor de Unidades")
+    print("1. Longitud")
+    print("2. Peso")
+    print("3. Temperatura")
+    print("4. Salir")
+    return input("Seleccione una opción (1-4): ")
+
+def main():
+    while True:
+        opcion = mostrar_menu()
+        
+        if opcion == "4":
+            print("¡Hasta luego!")
+            break
+            
+        # Obtener valor a convertir
+        valor = float(input("Ingrese el valor a convertir: "))
+        
+        if opcion == "1":
+            unidad_origen = input("Unidad origen (m/km/cm): ")
+            unidad_destino = input("Unidad destino (m/km/cm): ")
+            resultado = convertir_longitud(valor, unidad_origen, unidad_destino)
+            print(f"\n{valor} {unidad_origen} = {resultado:.2f} {unidad_destino}")
+            
+        elif opcion == "2":
+            unidad_origen = input("Unidad origen (kg/g/lb): ")
+            unidad_destino = input("Unidad destino (kg/g/lb): ")
+            resultado = convertir_peso(valor, unidad_origen, unidad_destino)
+            print(f"\n{valor} {unidad_origen} = {resultado:.2f} {unidad_destino}")
+            
+        elif opcion == "3":
+            unidad_origen = input("Unidad origen (C/F/K): ")
+            unidad_destino = input("Unidad destino (C/F/K): ")
+            resultado = convertir_temperatura(valor, unidad_origen, unidad_destino)
+            print(f"\n{valor} °{unidad_origen} = {resultado:.2f} °{unidad_destino}")
+            
+        else:
+            print("Opción no válida")
+
+if __name__ == "__main__":
+    main()
