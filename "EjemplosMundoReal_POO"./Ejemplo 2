@@ -1,0 +1,165 @@
+# Importaciones necesarias para fechas y tipado
+from datetime import datetime, timedelta
+from typing import List
+
+class Libro:
+    """Clase que representa un libro físico en la biblioteca."""
+    def __init__(self, titulo: str, autor: str, isbn: str, copias: int = 1):
+        # Información básica del libro
+        self.titulo = titulo
+        self.autor = autor
+        self.isbn = isbn  # Identificador único del libro
+        # Control de inventario
+        self.copias_totales = copias
+        self.copias_disponibles = copias
+        # Registro de préstamos
+        self.prestamos = []
+        self.categoria = None
+
+    def esta_disponible(self) -> bool:
+        """Verifica si hay copias disponibles para préstamo."""
+        return self.copias_disponibles > 0
+
+    def prestar(self):
+        """Reduce el contador de copias disponibles al prestar."""
+        if self.esta_disponible():
+            self.copias_disponibles -= 1
+        else:
+            raise ValueError("No hay copias disponibles")
+
+    def devolver(self):
+        """Incrementa el contador de copias disponibles al devolver."""
+        if self.copias_disponibles < self.copias_totales:
+            self.copias_disponibles += 1
+
+class Usuario:
+    """Gestiona la información y actividades de los usuarios de la biblioteca."""
+    def __init__(self, nombre: str, id_usuario: str, email: str):
+        # Información personal
+        self.nombre = nombre
+        self.id_usuario = id_usuario
+        self.email = email
+        # Control de préstamos
+        self.prestamos_activos = []
+        self.historial_prestamos = []
+        # Sistema de multas
+        self.multas = 0.0
+
+    def puede_pedir_prestado(self) -> bool:
+        """
+        Verifica si el usuario puede pedir más libros.
+        Límite: máximo 3 libros y sin multas pendientes.
+        """
+        return len(self.prestamos_activos) < 3 and self.multas == 0
+
+    def agregar_multa(self, cantidad: float):
+        """Añade una multa al usuario."""
+        self.multas += cantidad
+
+    def pagar_multa(self, cantidad: float):
+        """Procesa el pago de multas."""
+        if cantidad <= self.multas:
+            self.multas -= cantidad
+        else:
+            raise ValueError("El monto excede la multa pendiente")
+
+class Prestamo:
+    """Gestiona la transacción de préstamo entre usuario y libro."""
+    def __init__(self, usuario: Usuario, libro: Libro):
+        # Información básica del préstamo
+        self.usuario = usuario
+        self.libro = libro
+        # Control de fechas
+        self.fecha_prestamo = datetime.now()
+        self.fecha_devolucion = self.fecha_prestamo + timedelta(days=14)  # 2 semanas
+        self.devuelto = False
+        # Identificador único del préstamo
+        self.codigo = f"PREST{datetime.now().strftime('%Y%m%d%H%M')}"
+
+    def devolver(self):
+        """
+        Procesa la devolución del libro:
+        - Marca como devuelto
+        - Actualiza inventario
+        - Actualiza registros de usuario
+        - Calcula multas si hay retraso
+        """
+        if not self.devuelto:
+            self.devuelto = True
+            self.libro.devolver()
+            self.usuario.prestamos_activos.remove(self)
+            self.usuario.historial_prestamos.append(self)
+            
+            # Cálculo de multas por retraso
+            if datetime.now() > self.fecha_devolucion:
+                dias_retraso = (datetime.now() - self.fecha_devolucion).days
+                multa = dias_retraso * 1.0  # $1 por día de retraso
+                self.usuario.agregar_multa(multa)
+
+class Biblioteca:
+    """Clase principal que coordina todas las operaciones de la biblioteca."""
+    def __init__(self, nombre: str):
+        self.nombre = nombre
+        # Almacenamiento principal de datos
+        self.libros: List[Libro] = []
+        self.usuarios: List[Usuario] = []
+        self.prestamos: List[Prestamo] = []
+
+    def agregar_libro(self, libro: Libro):
+        """Añade un nuevo libro al inventario."""
+        self.libros.append(libro)
+
+    def registrar_usuario(self, usuario: Usuario):
+        """Registra un nuevo usuario en el sistema."""
+        self.usuarios.append(usuario)
+
+    def prestar_libro(self, isbn: str, id_usuario: str) -> Prestamo:
+        """
+        Proceso principal de préstamo:
+        1. Busca usuario y libro
+        2. Verifica condiciones
+        3. Crea y registra el préstamo
+        """
+        # Búsqueda de usuario y libro
+        usuario = next((u for u in self.usuarios if u.id_usuario == id_usuario), None)
+        libro = next((l for l in self.libros if l.isbn == isbn), None)
+
+        # Validaciones
+        if not usuario or not libro:
+            raise ValueError("Usuario o libro no encontrado")
+        if not usuario.puede_pedir_prestado():
+            raise ValueError("Usuario no puede pedir más libros")
+        if not libro.esta_disponible():
+            raise ValueError("Libro no disponible")
+
+        # Creación y registro del préstamo
+        prestamo = Prestamo(usuario, libro)
+        libro.prestar()
+        usuario.prestamos_activos.append(prestamo)
+        self.prestamos.append(prestamo)
+        return prestamo
+
+# Código de demostración
+if __name__ == "__main__":
+    # Inicialización del sistema
+    biblioteca = Biblioteca("Biblioteca Central")
+
+    # Creación de libros de prueba
+    libro1 = Libro("Don Quijote", "Cervantes", "ISBN001", 2)
+    libro2 = Libro("Cien años de soledad", "García Márquez", "ISBN002", 1)
+    biblioteca.agregar_libro(libro1)
+    biblioteca.agregar_libro(libro2)
+
+    # Creación de usuario de prueba
+    usuario1 = Usuario("Carlos Pérez", "U001", "carlos@email.com")
+    biblioteca.registrar_usuario(usuario1)
+
+    # Prueba de funcionalidad
+    try:
+        prestamo = biblioteca.prestar_libro("ISBN001", "U001")
+        print(f"Préstamo exitoso: {prestamo.codigo}")
+        
+        prestamo.devolver()
+        print(f"Libro devuelto. Multas pendientes: ${usuario1.multas}")
+    except ValueError as e:
+        print(f"Error: {e}")
