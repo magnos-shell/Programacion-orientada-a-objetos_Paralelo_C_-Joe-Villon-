@@ -1,0 +1,201 @@
+"""
+Este programa demuestra los conceptos fundamentales de la Programación Orientada a Objetos (POO)
+utilizando un sistema de gestión de vehículos. El programa permite crear y gestionar diferentes
+tipos de vehículos (automóviles y motocicletas) demostrando conceptos como herencia,
+encapsulación y polimorfismo.
+
+Conceptos demostrados:
+- Herencia: A través de la relación entre la clase base Vehiculo y sus clases derivadas
+- Encapsulación: Mediante atributos privados y métodos getter
+- Polimorfismo: A través de la sobrescritura del método describir en las clases derivadas
+"""
+
+class Vehiculo:
+    """
+    Clase base que representa un vehículo genérico.
+    Esta clase contiene los atributos y métodos comunes a todos los tipos de vehículos.
+    
+    Atributos privados:
+        __marca (str): Marca del vehículo
+        __modelo (str): Modelo del vehículo
+        __año (int): Año de fabricación
+        __encendido (bool): Estado del vehículo (encendido/apagado)
+    """
+    
+    def __init__(self, marca, modelo, año):
+        """
+        Constructor de la clase Vehiculo.
+        Inicializa todos los atributos privados del vehículo.
+        
+        Args:
+            marca (str): Marca del vehículo
+            modelo (str): Modelo del vehículo
+            año (int): Año de fabricación
+        """
+        self.__marca = marca
+        self.__modelo = modelo
+        self.__año = año
+        self.__encendido = False
+    
+    def get_marca(self):
+        """
+        Método getter para obtener la marca del vehículo.
+        Demuestra encapsulación al proporcionar acceso controlado al atributo privado.
+        
+        Returns:
+            str: Marca del vehículo
+        """
+        return self.__marca
+    
+    def get_modelo(self):
+        """
+        Método getter para obtener el modelo del vehículo.
+        
+        Returns:
+            str: Modelo del vehículo
+        """
+        return self.__modelo
+    
+    def encender(self):
+        """
+        Método para encender el vehículo.
+        Verifica el estado actual antes de cambiar el estado.
+        
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        if not self.__encendido:
+            self.__encendido = True
+            return f"{self.__marca} {self.__modelo} encendido"
+        return f"{self.__marca} {self.__modelo} ya está encendido"
+    
+    def describir(self):
+        """
+        Método base para describir el vehículo.
+        Este método será sobrescrito por las clases derivadas (polimorfismo).
+        
+        Returns:
+            str: Descripción básica del vehículo
+        """
+        return f"Vehículo: {self.__marca} {self.__modelo} del año {self.__año}"
+
+class Automovil(Vehiculo):
+    """
+    Clase que representa un automóvil, hereda de Vehiculo.
+    Añade funcionalidades específicas para automóviles.
+    
+    Atributos adicionales:
+        __tipo_combustible (str): Tipo de combustible que usa el automóvil
+    """
+    
+    def __init__(self, marca, modelo, año, tipo_combustible):
+        """
+        Constructor de la clase Automovil.
+        
+        Args:
+            marca (str): Marca del automóvil
+            modelo (str): Modelo del automóvil
+            año (int): Año de fabricación
+            tipo_combustible (str): Tipo de combustible que utiliza
+        """
+        super().__init__(marca, modelo, año)
+        self.__tipo_combustible = tipo_combustible
+    
+    def describir(self):
+        """
+        Sobrescribe el método describir de la clase base.
+        Ejemplo de polimorfismo.
+        
+        Returns:
+            str: Descripción detallada del automóvil
+        """
+        return f"{super().describir()} - Combustible: {self.__tipo_combustible}"
+    
+    def recargar_combustible(self, cantidad):
+        """
+        Método específico de la clase Automovil.
+        
+        Args:
+            cantidad (int): Cantidad de combustible a recargar
+            
+        Returns:
+            str: Mensaje confirmando la recarga
+        """
+        return f"Recargando {cantidad} litros de {self.__tipo_combustible}"
+
+class Motocicleta(Vehiculo):
+    """
+    Clase que representa una motocicleta, hereda de Vehiculo.
+    Añade funcionalidades específicas para motocicletas.
+    
+    Atributos adicionales:
+        __cilindrada (int): Cilindrada de la motocicleta en cc
+    """
+    
+    def __init__(self, marca, modelo, año, cilindrada):
+        """
+        Constructor de la clase Motocicleta.
+        
+        Args:
+            marca (str): Marca de la motocicleta
+            modelo (str): Modelo de la motocicleta
+            año (int): Año de fabricación
+            cilindrada (int): Cilindrada en cc
+        """
+        super().__init__(marca, modelo, año)
+        self.__cilindrada = cilindrada
+    
+    def describir(self):
+        """
+        Sobrescribe el método describir de la clase base.
+        Otro ejemplo de polimorfismo.
+        
+        Returns:
+            str: Descripción detallada de la motocicleta
+        """
+        return f"{super().describir()} - Cilindrada: {self.__cilindrada}cc"
+    
+    def hacer_wheelie(self):
+        """
+        Método específico de la clase Motocicleta.
+        
+        Returns:
+            str: Mensaje indicando la acción
+        """
+        return "¡Haciendo wheelie!"
+
+def main():
+    """
+    Función principal que demuestra el uso de las clases y sus funcionalidades.
+    Crea instancias de las clases y muestra ejemplos de:
+    - Encapsulación
+    - Polimorfismo
+    - Métodos específicos de cada clase
+    - Métodos heredados
+    """
+    # Crear instancias de las clases
+    auto = Automovil("Toyota", "Corolla", 2023, "Gasolina")
+    moto = Motocicleta("Honda", "CBR", 2023, 600)
+    
+    # Demostrar encapsulación
+    print("Accediendo a atributos encapsulados:")
+    print(f"Marca del auto: {auto.get_marca()}")
+    print(f"Modelo del auto: {auto.get_modelo()}")
+    
+    # Demostrar polimorfismo
+    print("\nDemostrando polimorfismo con el método describir:")
+    print(auto.describir())
+    print(moto.describir())
+    
+    # Demostrar métodos específicos de cada clase
+    print("\nMétodos específicos:")
+    print(auto.recargar_combustible(40))
+    print(moto.hacer_wheelie())
+    
+    # Demostrar método heredado
+    print("\nMétodo heredado (encender):")
+    print(auto.encender())
+    print(moto.encender())
+
+if __name__ == "__main__":
+    main()
