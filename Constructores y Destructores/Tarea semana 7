@@ -1,0 +1,122 @@
+"""
+Programa de Demostración de Constructores y Destructores en Python
+
+Descripción General:
+- Este programa ilustra el uso avanzado de constructores (__init__) y destructores (__del__) 
+- Muestra dos escenarios diferentes de gestión de recursos: manejo de archivos y control de instancias
+- Demuestra buenas prácticas de inicialización y liberación de recursos en programación orientada a objetos
+
+Objetivo Educativo:
+- Enseñar cómo los constructores inicializan objetos y sus atributos
+- Mostrar cómo los destructores limpian recursos y realizan tareas de finalización
+- Ejemplificar el ciclo de vida de los objetos en Python
+
+Clases Principales:
+1. GestorArchivos: 
+   - Gestiona la apertura y cierre seguro de archivos
+   - Demuestra manejo de recursos externos con constructores y destructores
+
+2. RecursoComplejo:
+   - Ilustra el seguimiento de instancias de objetos
+   - Muestra cómo los destructores pueden realizar tareas de limpieza y contabilización
+
+Características Técnicas:
+- Uso de métodos especiales __init__() y __del__()
+- Manejo de errores en la inicialización de recursos
+- Registro y seguimiento de estados de objetos
+"""
+class GestorArchivos:
+    """
+    Clase que demuestra el uso de constructor y destructor para manejo de archivos.
+    """
+    def __init__(self, nombre_archivo, modo='w'):
+        """
+        Constructor: Inicializa y abre un archivo para lectura o escritura.
+        
+        Args:
+            nombre_archivo (str): Ruta del archivo a abrir
+            modo (str, opcional): Modo de apertura del archivo. Por defecto 'w' (escritura)
+        """
+        try:
+            # Intentamos abrir el archivo en el modo especificado
+            self.archivo = open(nombre_archivo, modo)
+            self.nombre_archivo = nombre_archivo
+            print(f"Archivo {nombre_archivo} abierto correctamente en modo {modo}")
+        except IOError as e:
+            print(f"Error al abrir el archivo: {e}")
+            self.archivo = None
+
+    def escribir(self, contenido):
+        """
+        Método para escribir contenido en el archivo.
+        
+        Args:
+            contenido (str): Texto a escribir en el archivo
+        """
+        if self.archivo:
+            self.archivo.write(contenido)
+            print("Contenido escrito exitosamente")
+        else:
+            print("No se puede escribir. Archivo no abierto.")
+
+    def __del__(self):
+        """
+        Destructor: Cierra el archivo de manera segura al eliminar la instancia.
+        Se activa automáticamente cuando el objeto ya no tiene referencias.
+        """
+        if hasattr(self, 'archivo') and self.archivo is not None:
+            self.archivo.close()
+            print(f"Archivo {self.nombre_archivo} cerrado correctamente")
+
+
+class RecursoComplejo:
+    """
+    Clase que ilustra la inicialización y liberación de recursos complejos.
+    """
+    _instancias_activas = 0
+
+    def __init__(self, identificador):
+        """
+        Constructor: Inicializa un recurso y lleva un conteo de instancias.
+        
+        Args:
+            identificador (str): Identificador único del recurso
+        """
+        self.identificador = identificador
+        RecursoComplejo._instancias_activas += 1
+        print(f"Recurso {identificador} creado. Instancias activas: {RecursoComplejo._instancias_activas}")
+
+    def realizar_tarea(self):
+        """
+        Método que simula la realización de una tarea con el recurso.
+        """
+        print(f"Realizando tarea con recurso {self.identificador}")
+
+    def __del__(self):
+        """
+        Destructor: Libera el recurso y actualiza el conteo de instancias.
+        Se activa cuando el objeto es eliminado o sale de ámbito.
+        """
+        RecursoComplejo._instancias_activas -= 1
+        print(f"Recurso {self.identificador} liberado. Instancias restantes: {RecursoComplejo._instancias_activas}")
+
+
+def main():
+    # Demostración de GestorArchivos
+    print("--- Demostración de GestorArchivos ---")
+    gestor = GestorArchivos('ejemplo.txt')
+    gestor.escribir("Hola, este es un ejemplo de uso de constructores y destructores.")
+    # El archivo se cerrará automáticamente cuando gestor sea eliminado
+
+    # Demostración de RecursoComplejo
+    print("\n--- Demostración de RecursoComplejo ---")
+    recurso1 = RecursoComplejo("Recurso-A")
+    recurso1.realizar_tarea()
+    
+    recurso2 = RecursoComplejo("Recurso-B")
+    recurso2.realizar_tarea()
+    
+    # Los destructores se llamarán automáticamente al salir de ámbito
+
+if __name__ == "__main__":
+    main()
