@@ -1,0 +1,510 @@
+"""
+Sistema Avanzado de Gestión de Inventario
+==========================================
+
+Este programa implementa un sistema completo de gestión de inventario para una tienda utilizando
+Programación Orientada a Objetos (POO) y persistencia de datos en archivos.
+
+Funcionamiento:
+1. El sistema permite gestionar productos (agregar, eliminar, actualizar, buscar) mediante una interfaz de consola.
+2. La información de cada producto incluye ID único, nombre, cantidad y precio.
+3. Los datos se almacenan en memoria usando colecciones (diccionarios) para optimizar las búsquedas.
+4. El inventario completo se guarda en un archivo mediante serialización para persistencia entre ejecuciones.
+5. La arquitectura sigue principios de POO con encapsulamiento y separación de responsabilidades.
+
+Clases principales:
+- Producto: Representa un ítem individual del inventario con sus atributos y métodos.
+- Inventario: Gestiona la colección de productos y las operaciones sobre ellos.
+- SistemaInventario: Maneja la interfaz de usuario y la lógica de interacción.
+
+Autor: [Joe Villon]
+Fecha: [27/02/2025]
+"""
+
+# Importación de módulos necesarios
+import os  # Para operaciones con el sistema de archivos
+import pickle  # Para serialización/deserialización de objetos
+from typing import Dict, Optional, List  # Anotaciones de tipo para mejor documentación
+
+class Producto:
+    """Clase para representar un producto en el inventario."""
+    
+    def __init__(self, id: int, nombre: str, cantidad: int, precio: float):
+        """Inicializa un nuevo producto.
+        
+        Args:
+            id: Identificador único del producto.
+            nombre: Nombre del producto.
+            cantidad: Cantidad disponible en inventario.
+            precio: Precio unitario del producto.
+        """
+        # Atributos privados con doble guion bajo para encapsulamiento
+        self.__id = id  # Almacena el ID único del producto
+        self.__nombre = nombre  # Almacena el nombre del producto
+        self.__cantidad = cantidad  # Almacena la cantidad disponible
+        self.__precio = precio  # Almacena el precio unitario
+    
+    # Métodos getter para acceder a los atributos privados
+    def get_id(self) -> int:
+        # Devuelve el ID del producto
+        return self.__id
+    
+    def get_nombre(self) -> str:
+        # Devuelve el nombre del producto
+        return self.__nombre
+    
+    def get_cantidad(self) -> int:
+        # Devuelve la cantidad disponible
+        return self.__cantidad
+    
+    def get_precio(self) -> float:
+        # Devuelve el precio unitario
+        return self.__precio
+    
+    # Métodos setter para modificar los atributos privados
+    def set_nombre(self, nombre: str) -> None:
+        # Establece un nuevo nombre para el producto
+        self.__nombre = nombre
+    
+    def set_cantidad(self, cantidad: int) -> None:
+        # Valida que la cantidad no sea negativa antes de asignarla
+        if cantidad >= 0:
+            self.__cantidad = cantidad
+        else:
+            # Lanza una excepción si se intenta asignar una cantidad negativa
+            raise ValueError("La cantidad no puede ser negativa")
+    
+    def set_precio(self, precio: float) -> None:
+        # Valida que el precio no sea negativo antes de asignarlo
+        if precio >= 0:
+            self.__precio = precio
+        else:
+            # Lanza una excepción si se intenta asignar un precio negativo
+            raise ValueError("El precio no puede ser negativo")
+    
+    def __str__(self) -> str:
+        """Representación en string del producto."""
+        # Formatea la información del producto para su visualización
+        return f"ID: {self.__id}, Nombre: {self.__nombre}, Cantidad: {self.__cantidad}, Precio: ${self.__precio:.2f}"
+
+
+class Inventario:
+    """Clase para gestionar el inventario de productos."""
+    
+    def __init__(self):
+        """Inicializa un nuevo inventario vacío."""
+        # Diccionario para almacenar los productos, usando ID como clave para acceso rápido
+        self.__productos: Dict[int, Producto] = {}
+        # Nombre del archivo donde se guardará el inventario
+        self.__archivo = "inventario.dat"
+    
+    def agregar_producto(self, producto: Producto) -> bool:
+        """Añade un nuevo producto al inventario.
+        
+        Args:
+            producto: Objeto Producto a añadir.
+            
+        Returns:
+            True si se agregó correctamente, False si ya existe un producto con ese ID.
+        """
+        # Verifica si ya existe un producto con el mismo ID
+        if producto.get_id() in self.__productos:
+            return False
+        
+        # Agrega el producto al diccionario usando su ID como clave
+        self.__productos[producto.get_id()] = producto
+        return True
+    
+    def eliminar_producto(self, id: int) -> bool:
+        """Elimina un producto del inventario por su ID.
+        
+        Args:
+            id: ID del producto a eliminar.
+            
+        Returns:
+            True si se eliminó correctamente, False si no existe un producto con ese ID.
+        """
+        # Verifica si existe un producto con el ID especificado
+        if id in self.__productos:
+            # Elimina el producto del diccionario
+            del self.__productos[id]
+            return True
+        return False
+    
+    def actualizar_cantidad(self, id: int, cantidad: int) -> bool:
+        """Actualiza la cantidad de un producto.
+        
+        Args:
+            id: ID del producto a actualizar.
+            cantidad: Nueva cantidad.
+            
+        Returns:
+            True si se actualizó correctamente, False si no existe un producto con ese ID.
+        """
+        # Verifica si existe un producto con el ID especificado
+        if id in self.__productos:
+            # Actualiza la cantidad del producto
+            self.__productos[id].set_cantidad(cantidad)
+            return True
+        return False
+    
+    def actualizar_precio(self, id: int, precio: float) -> bool:
+        """Actualiza el precio de un producto.
+        
+        Args:
+            id: ID del producto a actualizar.
+            precio: Nuevo precio.
+            
+        Returns:
+            True si se actualizó correctamente, False si no existe un producto con ese ID.
+        """
+        # Verifica si existe un producto con el ID especificado
+        if id in self.__productos:
+            # Actualiza el precio del producto
+            self.__productos[id].set_precio(precio)
+            return True
+        return False
+    
+    def buscar_por_nombre(self, nombre: str) -> List[Producto]:
+        """Busca productos por nombre (búsqueda parcial, no sensible a mayúsculas/minúsculas).
+        
+        Args:
+            nombre: Nombre o parte del nombre a buscar.
+            
+        Returns:
+            Lista de productos que coinciden con la búsqueda.
+        """
+        # Convierte el término de búsqueda a minúsculas para comparación insensible a mayúsculas
+        nombre = nombre.lower()
+        # Utiliza comprensión de lista para filtrar productos que contienen el término de búsqueda
+        return [p for p in self.__productos.values() if nombre in p.get_nombre().lower()]
+    
+    def buscar_por_id(self, id: int) -> Optional[Producto]:
+        """Busca un producto por su ID.
+        
+        Args:
+            id: ID del producto a buscar.
+            
+        Returns:
+            El producto si existe, None en caso contrario.
+        """
+        # Utiliza el método get del diccionario que devuelve None si la clave no existe
+        return self.__productos.get(id)
+    
+    def obtener_todos_productos(self) -> List[Producto]:
+        """Obtiene todos los productos del inventario.
+        
+        Returns:
+            Lista con todos los productos.
+        """
+        # Convierte los valores del diccionario (productos) a una lista
+        return list(self.__productos.values())
+    
+    def guardar_inventario(self) -> bool:
+        """Guarda el inventario en un archivo.
+        
+        Returns:
+            True si se guardó correctamente, False en caso contrario.
+        """
+        try:
+            # Abre el archivo en modo binario para escritura
+            with open(self.__archivo, 'wb') as f:
+                # Serializa el diccionario de productos y lo guarda en el archivo
+                pickle.dump(self.__productos, f)
+            return True
+        except Exception as e:
+            # Captura y muestra cualquier error que ocurra durante el guardado
+            print(f"Error al guardar el inventario: {e}")
+            return False
+    
+    def cargar_inventario(self) -> bool:
+        """Carga el inventario desde un archivo.
+        
+        Returns:
+            True si se cargó correctamente, False en caso contrario.
+        """
+        # Verifica si el archivo de inventario existe
+        if not os.path.exists(self.__archivo):
+            return False
+        
+        try:
+            # Abre el archivo en modo binario para lectura
+            with open(self.__archivo, 'rb') as f:
+                # Deserializa el contenido del archivo y lo asigna al diccionario de productos
+                self.__productos = pickle.load(f)
+            return True
+        except Exception as e:
+            # Captura y muestra cualquier error que ocurra durante la carga
+            print(f"Error al cargar el inventario: {e}")
+            return False
+    
+    def obtener_siguiente_id(self) -> int:
+        """Obtiene el siguiente ID disponible.
+        
+        Returns:
+            El próximo ID disponible para un nuevo producto.
+        """
+        # Si el inventario está vacío, comienza con ID 1
+        if not self.__productos:
+            return 1
+        # De lo contrario, encuentra el ID más alto y suma 1
+        return max(self.__productos.keys()) + 1
+
+
+class SistemaInventario:
+    """Clase principal que maneja la interfaz de usuario y la lógica del sistema."""
+    
+    def __init__(self):
+        """Inicializa el sistema de inventario."""
+        # Crea una instancia de la clase Inventario
+        self.__inventario = Inventario()
+        # Intenta cargar los datos del inventario desde el archivo
+        self.__inventario.cargar_inventario()
+    
+    def mostrar_menu(self) -> None:
+        """Muestra el menú principal del sistema."""
+        # Imprime las opciones del menú
+        print("\n===== SISTEMA DE GESTIÓN DE INVENTARIO =====")
+        print("1. Agregar nuevo producto")
+        print("2. Eliminar producto")
+        print("3. Actualizar cantidad")
+        print("4. Actualizar precio")
+        print("5. Buscar producto por nombre")
+        print("6. Buscar producto por ID")
+        print("7. Mostrar todos los productos")
+        print("8. Guardar y salir")
+        print("================================================")
+    
+    def ejecutar(self) -> None:
+        """Ejecuta el sistema de inventario."""
+        # Bucle principal del programa
+        while True:
+            # Muestra el menú de opciones
+            self.mostrar_menu()
+            # Solicita al usuario que elija una opción
+            opcion = input("Seleccione una opción (1-8): ")
+            
+            # Procesa la opción seleccionada
+            if opcion == '1':
+                self.agregar_producto()  # Llama al método para agregar un producto
+            elif opcion == '2':
+                self.eliminar_producto()  # Llama al método para eliminar un producto
+            elif opcion == '3':
+                self.actualizar_cantidad()  # Llama al método para actualizar la cantidad
+            elif opcion == '4':
+                self.actualizar_precio()  # Llama al método para actualizar el precio
+            elif opcion == '5':
+                self.buscar_por_nombre()  # Llama al método para buscar por nombre
+            elif opcion == '6':
+                self.buscar_por_id()  # Llama al método para buscar por ID
+            elif opcion == '7':
+                self.mostrar_todos()  # Llama al método para mostrar todos los productos
+            elif opcion == '8':
+                # Guarda el inventario y termina el programa
+                self.__inventario.guardar_inventario()
+                print("Inventario guardado. ¡Hasta pronto!")
+                break
+            else:
+                # Muestra un mensaje si la opción no es válida
+                print("Opción no válida. Intente nuevamente.")
+    
+    def agregar_producto(self) -> None:
+        """Procesa la lógica para agregar un nuevo producto."""
+        # Muestra el título de la operación
+        print("\n----- Agregar Nuevo Producto -----")
+        
+        # Solicita el nombre del producto
+        nombre = input("Ingrese el nombre del producto: ")
+        
+        try:
+            # Solicita y convierte la cantidad a entero
+            cantidad = int(input("Ingrese la cantidad: "))
+            # Valida que la cantidad no sea negativa
+            if cantidad < 0:
+                print("Error: La cantidad no puede ser negativa.")
+                return
+            
+            # Solicita y convierte el precio a float
+            precio = float(input("Ingrese el precio: $"))
+            # Valida que el precio no sea negativo
+            if precio < 0:
+                print("Error: El precio no puede ser negativo.")
+                return
+            
+            # Obtiene el siguiente ID disponible
+            id_producto = self.__inventario.obtener_siguiente_id()
+            
+            # Crea un nuevo objeto Producto
+            producto = Producto(id_producto, nombre, cantidad, precio)
+            # Intenta agregar el producto al inventario
+            if self.__inventario.agregar_producto(producto):
+                print(f"Producto agregado exitosamente con ID: {id_producto}")
+            else:
+                print("Error al agregar el producto.")
+                
+        except ValueError:
+            # Captura errores de conversión de tipo (si el usuario ingresa texto en lugar de números)
+            print("Error: Por favor ingrese valores numéricos válidos para cantidad y precio.")
+    
+    def eliminar_producto(self) -> None:
+        """Procesa la lógica para eliminar un producto."""
+        # Muestra el título de la operación
+        print("\n----- Eliminar Producto -----")
+        
+        try:
+            # Solicita y convierte el ID del producto a entero
+            id_producto = int(input("Ingrese el ID del producto a eliminar: "))
+            
+            # Intenta eliminar el producto del inventario
+            if self.__inventario.eliminar_producto(id_producto):
+                print("Producto eliminado exitosamente.")
+            else:
+                print(f"No se encontró ningún producto con ID: {id_producto}")
+                
+        except ValueError:
+            # Captura errores de conversión de tipo
+            print("Error: Por favor ingrese un ID válido (número entero).")
+    
+    def actualizar_cantidad(self) -> None:
+        """Procesa la lógica para actualizar la cantidad de un producto."""
+        # Muestra el título de la operación
+        print("\n----- Actualizar Cantidad -----")
+        
+        try:
+            # Solicita y convierte el ID del producto a entero
+            id_producto = int(input("Ingrese el ID del producto: "))
+            
+            # Busca el producto en el inventario
+            producto = self.__inventario.buscar_por_id(id_producto)
+            # Verifica si el producto existe
+            if not producto:
+                print(f"No se encontró ningún producto con ID: {id_producto}")
+                return
+            
+            # Muestra la información actual del producto
+            print(f"Producto actual: {producto}")
+            # Solicita y convierte la nueva cantidad a entero
+            cantidad = int(input("Ingrese la nueva cantidad: "))
+            
+            # Valida que la cantidad no sea negativa
+            if cantidad < 0:
+                print("Error: La cantidad no puede ser negativa.")
+                return
+            
+            # Intenta actualizar la cantidad del producto
+            if self.__inventario.actualizar_cantidad(id_producto, cantidad):
+                print("Cantidad actualizada exitosamente.")
+            else:
+                print("Error al actualizar la cantidad.")
+                
+        except ValueError:
+            # Captura errores de conversión de tipo
+            print("Error: Por favor ingrese valores numéricos válidos.")
+    
+    def actualizar_precio(self) -> None:
+        """Procesa la lógica para actualizar el precio de un producto."""
+        # Muestra el título de la operación
+        print("\n----- Actualizar Precio -----")
+        
+        try:
+            # Solicita y convierte el ID del producto a entero
+            id_producto = int(input("Ingrese el ID del producto: "))
+            
+            # Busca el producto en el inventario
+            producto = self.__inventario.buscar_por_id(id_producto)
+            # Verifica si el producto existe
+            if not producto:
+                print(f"No se encontró ningún producto con ID: {id_producto}")
+                return
+            
+            # Muestra la información actual del producto
+            print(f"Producto actual: {producto}")
+            # Solicita y convierte el nuevo precio a float
+            precio = float(input("Ingrese el nuevo precio: $"))
+            
+            # Valida que el precio no sea negativo
+            if precio < 0:
+                print("Error: El precio no puede ser negativo.")
+                return
+            
+            # Intenta actualizar el precio del producto
+            if self.__inventario.actualizar_precio(id_producto, precio):
+                print("Precio actualizado exitosamente.")
+            else:
+                print("Error al actualizar el precio.")
+                
+        except ValueError:
+            # Captura errores de conversión de tipo
+            print("Error: Por favor ingrese valores numéricos válidos.")
+    
+    def buscar_por_nombre(self) -> None:
+        """Procesa la lógica para buscar productos por nombre."""
+        # Muestra el título de la operación
+        print("\n----- Buscar Producto por Nombre -----")
+        
+        # Solicita el término de búsqueda
+        nombre = input("Ingrese el nombre o parte del nombre a buscar: ")
+        # Realiza la búsqueda en el inventario
+        productos = self.__inventario.buscar_por_nombre(nombre)
+        
+        # Verifica si se encontraron productos
+        if productos:
+            # Muestra la cantidad de productos encontrados
+            print(f"\nSe encontraron {len(productos)} productos:")
+            # Muestra cada producto encontrado
+            for producto in productos:
+                print(producto)
+        else:
+            # Muestra un mensaje si no se encontraron productos
+            print(f"No se encontraron productos que coincidan con '{nombre}'.")
+    
+    def buscar_por_id(self) -> None:
+        """Procesa la lógica para buscar un producto por ID."""
+        # Muestra el título de la operación
+        print("\n----- Buscar Producto por ID -----")
+        
+        try:
+            # Solicita y convierte el ID del producto a entero
+            id_producto = int(input("Ingrese el ID del producto: "))
+            
+            # Busca el producto en el inventario
+            producto = self.__inventario.buscar_por_id(id_producto)
+            # Verifica si el producto existe
+            if producto:
+                # Muestra la información del producto encontrado
+                print("\nProducto encontrado:")
+                print(producto)
+            else:
+                # Muestra un mensaje si no se encontró el producto
+                print(f"No se encontró ningún producto con ID: {id_producto}")
+                
+        except ValueError:
+            # Captura errores de conversión de tipo
+            print("Error: Por favor ingrese un ID válido (número entero).")
+    
+    def mostrar_todos(self) -> None:
+        """Muestra todos los productos en el inventario."""
+        # Muestra el título de la operación
+        print("\n----- Todos los Productos -----")
+        
+        # Obtiene todos los productos del inventario
+        productos = self.__inventario.obtener_todos_productos()
+        
+        # Verifica si hay productos en el inventario
+        if productos:
+            # Muestra la cantidad total de productos
+            print(f"Total de productos: {len(productos)}")
+            # Muestra cada producto del inventario
+            for producto in productos:
+                print(producto)
+        else:
+            # Muestra un mensaje si el inventario está vacío
+            print("El inventario está vacío.")
+
+
+# Punto de entrada del programa
+if __name__ == "__main__":
+    # Crea una instancia del sistema de inventario
+    sistema = SistemaInventario()
+    # Inicia la ejecución del sistema
+    sistema.ejecutar()
