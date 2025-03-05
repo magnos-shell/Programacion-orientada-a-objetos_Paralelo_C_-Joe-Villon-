@@ -1,0 +1,476 @@
+# Sistema de Gestión de Biblioteca Digital
+"""
+Este programa implementa un sistema completo para gestionar una biblioteca digital.
+Permite administrar libros, usuarios y préstamos mediante estructuras de datos eficientes.
+
+Características principales:
+- Gestión completa de libros (agregar, eliminar, buscar)
+- Administración de usuarios (registrar, dar de baja)
+- Control de préstamos y devoluciones
+- Búsquedas por diferentes criterios (título, autor, categoría)
+- Estadísticas del estado de la biblioteca
+
+El sistema utiliza:
+- Tuplas para almacenar datos inmutables (título y autor de libros)
+- Listas para gestionar los libros prestados a cada usuario
+- Diccionarios para acceso eficiente a libros por ISBN y usuarios por ID
+- Conjuntos para garantizar la unicidad de los IDs de usuario
+"""
+
+class Libro:
+    """
+    Clase que representa un libro en la biblioteca digital.
+    
+    Atributos:
+        _datos_inmutables: Tupla con (título, autor)
+        categoria: Categoría del libro
+        isbn: ISBN único del libro
+        disponible: Estado de disponibilidad del libro
+    """
+    
+    def __init__(self, titulo, autor, categoria, isbn):
+        """
+        Inicializa un nuevo libro con los datos proporcionados.
+        
+        Args:
+            titulo: Título del libro
+            autor: Nombre del autor
+            categoria: Categoría a la que pertenece el libro
+            isbn: Código ISBN único del libro
+        """
+        # Usamos una tupla para los datos que no cambiarán, cumpliendo con el requisito
+        # de utilizar tuplas para atributos inmutables
+        self._datos_inmutables = (titulo, autor)
+        self.categoria = categoria
+        self.isbn = isbn
+        self.disponible = True  # Por defecto, el libro está disponible para préstamo
+    
+    @property
+    def titulo(self):
+        """
+        Devuelve el título del libro.
+        
+        Returns:
+            str: El título del libro
+        """
+        # Accedemos al primer elemento de la tupla inmutable
+        return self._datos_inmutables[0]
+    
+    @property
+    def autor(self):
+        """
+        Devuelve el autor del libro.
+        
+        Returns:
+            str: El autor del libro
+        """
+        # Accedemos al segundo elemento de la tupla inmutable
+        return self._datos_inmutables[1]
+    
+    def __str__(self):
+        """
+        Representación en string del libro.
+        
+        Returns:
+            str: Una cadena con la información completa del libro
+        """
+        # Mostramos todos los datos del libro, incluido su estado de disponibilidad
+        estado = "Disponible" if self.disponible else "Prestado"
+        return f"Libro: '{self.titulo}' por {self.autor} - Categoría: {self.categoria} - ISBN: {self.isbn} - {estado}"
+
+
+class Usuario:
+    """
+    Clase que representa a un usuario de la biblioteca digital.
+    
+    Atributos:
+        nombre: Nombre del usuario
+        id_usuario: ID único del usuario
+        libros_prestados: Lista de libros actualmente prestados al usuario
+    """
+    
+    def __init__(self, nombre, id_usuario):
+        """
+        Inicializa un nuevo usuario con los datos proporcionados.
+        
+        Args:
+            nombre: Nombre completo del usuario
+            id_usuario: Identificador único del usuario
+        """
+        self.nombre = nombre
+        self.id_usuario = id_usuario
+        # Usamos una lista para almacenar los libros prestados, cumpliendo el requisito
+        # de utilizar listas para gestionar préstamos
+        self.libros_prestados = []
+    
+    def prestar_libro(self, libro):
+        """
+        Añade un libro a la lista de libros prestados del usuario.
+        
+        Args:
+            libro: Objeto de la clase Libro que se presta al usuario
+        """
+        # Agregamos el libro a la lista de préstamos del usuario
+        self.libros_prestados.append(libro)
+    
+    def devolver_libro(self, isbn):
+        """
+        Elimina un libro de la lista de libros prestados del usuario.
+        
+        Args:
+            isbn: ISBN del libro a devolver
+            
+        Returns:
+            Libro: El libro devuelto o None si no se encontró
+        """
+        # Buscamos y eliminamos el libro de la lista de préstamos
+        for i, libro in enumerate(self.libros_prestados):
+            if libro.isbn == isbn:
+                return self.libros_prestados.pop(i)
+        return None  # Si no se encuentra el libro
+    
+    def listar_libros_prestados(self):
+        """
+        Muestra todos los libros prestados al usuario.
+        
+        Returns:
+            str: Una cadena con la lista de libros prestados
+        """
+        # Verificamos si el usuario tiene libros prestados
+        if not self.libros_prestados:
+            return f"El usuario {self.nombre} no tiene libros prestados."
+        
+        # Generamos un listado de todos los libros prestados al usuario
+        resultado = f"Libros prestados a {self.nombre}:\n"
+        for libro in self.libros_prestados:
+            resultado += f"- {libro.titulo} (ISBN: {libro.isbn})\n"
+        return resultado
+    
+    def __str__(self):
+        """
+        Representación en string del usuario.
+        
+        Returns:
+            str: Una cadena con la información básica del usuario
+        """
+        # Mostramos datos del usuario y la cantidad de libros prestados
+        return f"Usuario: {self.nombre} - ID: {self.id_usuario} - Libros prestados: {len(self.libros_prestados)}"
+
+
+class Biblioteca:
+    """
+    Clase que gestiona la biblioteca digital.
+    
+    Atributos:
+        libros: Diccionario que almacena los libros por ISBN
+        usuarios: Diccionario que almacena los usuarios por ID
+        ids_usuarios: Conjunto para controlar la unicidad de IDs de usuarios
+    """
+    
+    def __init__(self):
+        """
+        Inicializa una nueva biblioteca digital vacía.
+        """
+        # Usamos un diccionario para almacenar libros con el ISBN como clave,
+        # cumpliendo el requisito de acceso eficiente por ISBN
+        self.libros = {}
+        
+        # Usamos un diccionario para almacenar usuarios con su ID como clave
+        self.usuarios = {}
+        
+        # Usamos un conjunto para asegurar IDs únicos, cumpliendo el requisito
+        # de utilizar conjuntos para asegurar unicidad
+        self.ids_usuarios = set()
+    
+    def agregar_libro(self, libro):
+        """
+        Añade un nuevo libro a la biblioteca.
+        
+        Args:
+            libro: Objeto de la clase Libro a añadir
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que no exista otro libro con el mismo ISBN
+        if libro.isbn in self.libros:
+            return f"Error: Ya existe un libro con el ISBN {libro.isbn}."
+        
+        # Agregamos el libro al diccionario usando el ISBN como clave
+        self.libros[libro.isbn] = libro
+        return f"Libro '{libro.titulo}' añadido correctamente."
+    
+    def eliminar_libro(self, isbn):
+        """
+        Elimina un libro de la biblioteca por su ISBN.
+        
+        Args:
+            isbn: ISBN del libro a eliminar
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que el libro exista en la biblioteca
+        if isbn not in self.libros:
+            return f"Error: No se encontró un libro con el ISBN {isbn}."
+        
+        libro = self.libros[isbn]
+        # Verificamos que el libro no esté prestado antes de eliminarlo
+        if not libro.disponible:
+            return f"Error: El libro '{libro.titulo}' está prestado y no puede ser eliminado."
+        
+        # Eliminamos el libro del diccionario
+        del self.libros[isbn]
+        return f"Libro '{libro.titulo}' eliminado correctamente."
+    
+    def registrar_usuario(self, usuario):
+        """
+        Registra un nuevo usuario en la biblioteca.
+        
+        Args:
+            usuario: Objeto de la clase Usuario a registrar
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que no exista otro usuario con el mismo ID
+        if usuario.id_usuario in self.ids_usuarios:
+            return f"Error: Ya existe un usuario con el ID {usuario.id_usuario}."
+        
+        # Agregamos el usuario al diccionario y su ID al conjunto
+        self.usuarios[usuario.id_usuario] = usuario
+        self.ids_usuarios.add(usuario.id_usuario)
+        return f"Usuario {usuario.nombre} registrado correctamente."
+    
+    def dar_baja_usuario(self, id_usuario):
+        """
+        Da de baja a un usuario existente.
+        
+        Args:
+            id_usuario: ID del usuario a dar de baja
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que el usuario exista en la biblioteca
+        if id_usuario not in self.usuarios:
+            return f"Error: No se encontró un usuario con el ID {id_usuario}."
+        
+        usuario = self.usuarios[id_usuario]
+        # Verificamos que el usuario no tenga libros prestados antes de darlo de baja
+        if usuario.libros_prestados:
+            return f"Error: El usuario {usuario.nombre} tiene libros prestados y no puede darse de baja."
+        
+        # Eliminamos el usuario del diccionario y su ID del conjunto
+        del self.usuarios[id_usuario]
+        self.ids_usuarios.remove(id_usuario)
+        return f"Usuario {usuario.nombre} dado de baja correctamente."
+    
+    def prestar_libro(self, isbn, id_usuario):
+        """
+        Realiza el préstamo de un libro a un usuario.
+        
+        Args:
+            isbn: ISBN del libro a prestar
+            id_usuario: ID del usuario que solicita el préstamo
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que el libro exista en la biblioteca
+        if isbn not in self.libros:
+            return f"Error: No se encontró un libro con el ISBN {isbn}."
+        
+        # Verificamos que el usuario esté registrado
+        if id_usuario not in self.usuarios:
+            return f"Error: No se encontró un usuario con el ID {id_usuario}."
+        
+        libro = self.libros[isbn]
+        usuario = self.usuarios[id_usuario]
+        
+        # Verificamos que el libro esté disponible
+        if not libro.disponible:
+            return f"Error: El libro '{libro.titulo}' no está disponible."
+        
+        # Marcamos el libro como no disponible y lo asignamos al usuario
+        libro.disponible = False
+        usuario.prestar_libro(libro)
+        return f"Libro '{libro.titulo}' prestado correctamente a {usuario.nombre}."
+    
+    def devolver_libro(self, isbn, id_usuario):
+        """
+        Procesa la devolución de un libro.
+        
+        Args:
+            isbn: ISBN del libro a devolver
+            id_usuario: ID del usuario que devuelve el libro
+            
+        Returns:
+            str: Mensaje indicando el resultado de la operación
+        """
+        # Verificamos que el libro exista en la biblioteca
+        if isbn not in self.libros:
+            return f"Error: No se encontró un libro con el ISBN {isbn}."
+        
+        # Verificamos que el usuario esté registrado
+        if id_usuario not in self.usuarios:
+            return f"Error: No se encontró un usuario con el ID {id_usuario}."
+        
+        libro = self.libros[isbn]
+        usuario = self.usuarios[id_usuario]
+        
+        # Intentamos que el usuario devuelva el libro
+        libro_devuelto = usuario.devolver_libro(isbn)
+        if not libro_devuelto:
+            return f"Error: El usuario {usuario.nombre} no tiene prestado el libro con ISBN {isbn}."
+        
+        # Marcamos el libro como disponible nuevamente
+        libro.disponible = True
+        return f"Libro '{libro.titulo}' devuelto correctamente por {usuario.nombre}."
+    
+    def buscar_por_titulo(self, titulo):
+        """
+        Busca libros por título o parte del título.
+        
+        Args:
+            titulo: Texto a buscar en los títulos de los libros
+            
+        Returns:
+            list: Lista de libros que coinciden con la búsqueda
+        """
+        # Buscamos los libros que contengan el texto en su título
+        resultados = []
+        for libro in self.libros.values():
+            if titulo.lower() in libro.titulo.lower():
+                resultados.append(libro)
+        return resultados
+    
+    def buscar_por_autor(self, autor):
+        """
+        Busca libros por autor o parte del nombre del autor.
+        
+        Args:
+            autor: Texto a buscar en los nombres de los autores
+            
+        Returns:
+            list: Lista de libros que coinciden con la búsqueda
+        """
+        # Buscamos los libros que contengan el texto en el nombre del autor
+        resultados = []
+        for libro in self.libros.values():
+            if autor.lower() in libro.autor.lower():
+                resultados.append(libro)
+        return resultados
+    
+    def buscar_por_categoria(self, categoria):
+        """
+        Busca libros por categoría exacta.
+        
+        Args:
+            categoria: Categoría a buscar
+            
+        Returns:
+            list: Lista de libros que coinciden con la categoría
+        """
+        # Buscamos los libros que pertenecen a la categoría especificada
+        resultados = []
+        for libro in self.libros.values():
+            if libro.categoria.lower() == categoria.lower():
+                resultados.append(libro)
+        return resultados
+    
+    def listar_libros_usuario(self, id_usuario):
+        """
+        Lista los libros prestados a un usuario específico.
+        
+        Args:
+            id_usuario: ID del usuario
+            
+        Returns:
+            str: Mensaje con la lista de libros prestados
+        """
+        # Verificamos que el usuario esté registrado
+        if id_usuario not in self.usuarios:
+            return f"Error: No se encontró un usuario con el ID {id_usuario}."
+        
+        # Obtenemos la lista de libros prestados al usuario
+        usuario = self.usuarios[id_usuario]
+        return usuario.listar_libros_prestados()
+    
+    def estadisticas(self):
+        """
+        Devuelve estadísticas generales de la biblioteca.
+        
+        Returns:
+            dict: Diccionario con las estadísticas de la biblioteca
+        """
+        # Calculamos diferentes estadísticas de la biblioteca
+        total_libros = len(self.libros)
+        libros_prestados = sum(1 for libro in self.libros.values() if not libro.disponible)
+        total_usuarios = len(self.usuarios)
+        
+        # Devolvemos un diccionario con las estadísticas
+        return {
+            "total_libros": total_libros,
+            "libros_disponibles": total_libros - libros_prestados,
+            "libros_prestados": libros_prestados,
+            "total_usuarios": total_usuarios
+        }
+
+
+# Ejemplo de uso del sistema
+if __name__ == "__main__":
+    # Crear la biblioteca - Inicializa el sistema principal
+    biblioteca = Biblioteca()
+    
+    # Agregar algunos libros - Demostramos la funcionalidad de agregar libros
+    libro1 = Libro("Cien años de soledad", "Gabriel García Márquez", "Ficción", "9780307474728")
+    libro2 = Libro("El principito", "Antoine de Saint-Exupéry", "Infantil", "9788498381498")
+    libro3 = Libro("Don Quijote de la Mancha", "Miguel de Cervantes", "Clásico", "9788420412146")
+    libro4 = Libro("La sombra del viento", "Carlos Ruiz Zafón", "Ficción", "9788408163381")
+    
+    print(biblioteca.agregar_libro(libro1))
+    print(biblioteca.agregar_libro(libro2))
+    print(biblioteca.agregar_libro(libro3))
+    print(biblioteca.agregar_libro(libro4))
+    print()
+    
+    # Registrar usuarios - Demostramos la funcionalidad de registro de usuarios
+    usuario1 = Usuario("Ana García", "U001")
+    usuario2 = Usuario("Pedro López", "U002")
+    
+    print(biblioteca.registrar_usuario(usuario1))
+    print(biblioteca.registrar_usuario(usuario2))
+    print()
+    
+    # Realizar préstamos - Demostramos la funcionalidad de préstamo de libros
+    print(biblioteca.prestar_libro("9780307474728", "U001"))  # Cien años de soledad a Ana
+    print(biblioteca.prestar_libro("9788498381498", "U001"))  # El principito a Ana
+    print(biblioteca.prestar_libro("9788420412146", "U002"))  # Don Quijote a Pedro
+    print()
+    
+    # Listar libros prestados a un usuario - Demostramos la funcionalidad de listar préstamos
+    print(biblioteca.listar_libros_usuario("U001"))
+    print()
+    
+    # Búsqueda de libros - Demostramos la funcionalidad de búsqueda por título
+    print("Búsqueda por título 'viento':")
+    for libro in biblioteca.buscar_por_titulo("viento"):
+        print(f"- {libro}")
+    print()
+    
+    # Búsqueda de libros - Demostramos la funcionalidad de búsqueda por autor
+    print("Búsqueda por autor 'García':")
+    for libro in biblioteca.buscar_por_autor("García"):
+        print(f"- {libro}")
+    print()
+    
+    # Devolución de libro - Demostramos la funcionalidad de devolución de libros
+    print(biblioteca.devolver_libro("9780307474728", "U001"))  # Ana devuelve Cien años de soledad
+    print()
+    
+    # Estadísticas - Demostramos la funcionalidad de obtener estadísticas
+    stats = biblioteca.estadisticas()
+    print("Estadísticas de la biblioteca:")
+    for clave, valor in stats.items():
+        print(f"- {clave}: {valor}")
