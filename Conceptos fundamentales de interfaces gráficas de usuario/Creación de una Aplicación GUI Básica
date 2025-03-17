@@ -1,0 +1,227 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import datetime
+
+class AplicacionGUI:
+    def __init__(self, root):
+        """
+        Constructor de la aplicación.
+        Inicializa la ventana principal y configura todos los componentes GUI.
+        """
+        self.root = root
+        self.root.title("Gestor de Tareas")  # Título descriptivo
+        self.root.geometry("600x500")  # Tamaño inicial de la ventana
+        self.root.resizable(True, True)  # Permitir redimensionar
+        
+        # Configuración de estilo
+        self.configurar_estilo()
+        
+        # Creación de los componentes de la interfaz
+        self.crear_marco_entrada()
+        self.crear_tabla_tareas()
+        self.crear_botones_accion()
+        
+        # Variables para manejar los datos
+        self.contador_id = 1  # Contador para IDs únicos de tareas
+    
+    def configurar_estilo(self):
+        """
+        Configura el estilo visual de la aplicación.
+        """
+        # Establecer tema y configuración de estilo
+        self.estilo = ttk.Style()
+        self.estilo.theme_use('clam')  # Usar tema clam para una apariencia moderna
+        
+        # Configurar colores y estilos para varios elementos
+        self.estilo.configure('TFrame', background='#f0f0f0')
+        self.estilo.configure('TLabel', background='#f0f0f0', font=('Arial', 10))
+        self.estilo.configure('TButton', font=('Arial', 10))
+        self.estilo.configure('Heading.TLabel', font=('Arial', 12, 'bold'))
+        
+    def crear_marco_entrada(self):
+        """
+        Crea el panel superior con campos para ingresar nuevas tareas.
+        """
+        # Marco principal para entrada de datos
+        self.marco_entrada = ttk.Frame(self.root, padding="10")
+        self.marco_entrada.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Título del panel
+        ttk.Label(
+            self.marco_entrada, 
+            text="Agregar Nueva Tarea", 
+            style='Heading.TLabel'
+        ).grid(row=0, column=0, columnspan=2, sticky='w', pady=(0, 10))
+        
+        # Etiqueta y campo para el nombre de la tarea
+        ttk.Label(
+            self.marco_entrada, 
+            text="Descripción:"
+        ).grid(row=1, column=0, sticky='w', pady=5)
+        
+        self.entrada_tarea = ttk.Entry(self.marco_entrada, width=50)
+        self.entrada_tarea.grid(row=1, column=1, sticky='ew', pady=5)
+        
+        # Etiqueta y campo para la prioridad
+        ttk.Label(
+            self.marco_entrada, 
+            text="Prioridad:"
+        ).grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.combo_prioridad = ttk.Combobox(
+            self.marco_entrada, 
+            values=["Alta", "Media", "Baja"],
+            state="readonly",
+            width=10
+        )
+        self.combo_prioridad.current(1)  # Valor por defecto: Media
+        self.combo_prioridad.grid(row=2, column=1, sticky='w', pady=5)
+        
+    def crear_tabla_tareas(self):
+        """
+        Crea la tabla que mostrará las tareas agregadas.
+        """
+        # Marco para la tabla
+        self.marco_tabla = ttk.Frame(self.root, padding="10")
+        self.marco_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        
+        # Título de la tabla
+        ttk.Label(
+            self.marco_tabla, 
+            text="Lista de Tareas", 
+            style='Heading.TLabel'
+        ).pack(anchor='w', pady=(0, 10))
+        
+        # Crear el treeview (tabla) con columnas
+        columnas = ('id', 'descripcion', 'prioridad', 'fecha')
+        
+        self.tabla = ttk.Treeview(
+            self.marco_tabla,
+            columns=columnas,
+            show='headings',
+            selectmode='browse'
+        )
+        
+        # Definir los encabezados de columna
+        self.tabla.heading('id', text='ID')
+        self.tabla.heading('descripcion', text='Descripción')
+        self.tabla.heading('prioridad', text='Prioridad')
+        self.tabla.heading('fecha', text='Fecha')
+        
+        # Configurar el ancho de las columnas
+        self.tabla.column('id', width=50, anchor='center')
+        self.tabla.column('descripcion', width=250)
+        self.tabla.column('prioridad', width=100, anchor='center')
+        self.tabla.column('fecha', width=150, anchor='center')
+        
+        # Agregar barras de desplazamiento
+        scrollbar_y = ttk.Scrollbar(self.marco_tabla, orient=tk.VERTICAL, command=self.tabla.yview)
+        self.tabla.configure(yscrollcommand=scrollbar_y.set)
+        
+        # Posicionar la tabla y la barra de desplazamiento
+        self.tabla.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
+        
+    def crear_botones_accion(self):
+        """
+        Crea los botones para realizar acciones: agregar, eliminar y limpiar.
+        """
+        # Marco para botones
+        self.marco_botones = ttk.Frame(self.root, padding="10")
+        self.marco_botones.pack(fill=tk.X, padx=10, pady=(0, 10))
+        
+        # Botón para agregar tarea
+        self.boton_agregar = ttk.Button(
+            self.marco_botones, 
+            text="Agregar",
+            command=self.agregar_tarea
+        )
+        self.boton_agregar.pack(side=tk.LEFT, padx=5)
+        
+        # Botón para eliminar tarea seleccionada
+        self.boton_eliminar = ttk.Button(
+            self.marco_botones, 
+            text="Eliminar",
+            command=self.eliminar_tarea
+        )
+        self.boton_eliminar.pack(side=tk.LEFT, padx=5)
+        
+        # Botón para limpiar el formulario
+        self.boton_limpiar = ttk.Button(
+            self.marco_botones, 
+            text="Limpiar",
+            command=self.limpiar_formulario
+        )
+        self.boton_limpiar.pack(side=tk.LEFT, padx=5)
+    
+    def agregar_tarea(self):
+        """
+        Maneja el evento para agregar una nueva tarea a la tabla.
+        """
+        # Obtener datos de los campos
+        descripcion = self.entrada_tarea.get().strip()
+        prioridad = self.combo_prioridad.get()
+        
+        # Validar que haya una descripción
+        if not descripcion:
+            messagebox.showwarning("Advertencia", "Por favor ingrese una descripción para la tarea.")
+            return
+        
+        # Obtener fecha actual formateada
+        fecha_actual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+        
+        # Insertar en la tabla
+        self.tabla.insert(
+            '', 'end',
+            values=(self.contador_id, descripcion, prioridad, fecha_actual)
+        )
+        
+        # Incrementar el contador de ID
+        self.contador_id += 1
+        
+        # Limpiar el campo de descripción para la próxima entrada
+        self.entrada_tarea.delete(0, tk.END)
+        
+        # Mostrar mensaje de confirmación
+        messagebox.showinfo("Éxito", "Tarea agregada correctamente.")
+    
+    def eliminar_tarea(self):
+        """
+        Elimina la tarea seleccionada de la tabla.
+        """
+        # Obtener el ítem seleccionado
+        seleccionado = self.tabla.selection()
+        
+        if not seleccionado:
+            messagebox.showwarning("Advertencia", "Por favor seleccione una tarea para eliminar.")
+            return
+        
+        # Confirmar eliminación
+        if messagebox.askyesno("Confirmar", "¿Está seguro de que desea eliminar esta tarea?"):
+            # Eliminar el ítem seleccionado
+            self.tabla.delete(seleccionado)
+            messagebox.showinfo("Éxito", "Tarea eliminada correctamente.")
+    
+    def limpiar_formulario(self):
+        """
+        Limpia todos los campos del formulario.
+        """
+        self.entrada_tarea.delete(0, tk.END)
+        self.combo_prioridad.current(1)  # Volver a "Media"
+
+# Función principal para iniciar la aplicación
+def main():
+    """
+    Función principal que inicia la aplicación.
+    """
+    # Crear ventana root
+    root = tk.Tk()
+    
+    # Inicializar la aplicación
+    app = AplicacionGUI(root)
+    
+    # Iniciar el bucle principal
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
