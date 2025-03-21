@@ -1,0 +1,254 @@
+"""
+# Aplicación de Agenda Personal con Tkinter
+
+## Descripción general
+Esta aplicación es una agenda personal desarrollada con Python utilizando la biblioteca Tkinter para la interfaz gráfica. 
+Permite al usuario gestionar sus eventos y tareas programadas a través de una interfaz amigable e intuitiva. 
+La aplicación proporciona funcionalidades para añadir nuevos eventos, visualizarlos en una lista ordenada y eliminar eventos existentes.
+
+## Funcionalidades principales
+- **Visualización de eventos**: Muestra todos los eventos registrados en una tabla que incluye fecha, hora y descripción.
+- **Registro de eventos**: Permite añadir nuevos eventos especificando la fecha mediante un selector de calendario, la hora en formato HH:MM y una descripción.
+- **Eliminación de eventos**: Facilita la eliminación de eventos seleccionados con confirmación previa para evitar eliminaciones accidentales.
+- **Validación de datos**: Verifica que la información introducida cumpla con el formato requerido, evitando errores en el registro.
+
+## Dependencias
+Para ejecutar correctamente esta aplicación, se requieren las siguientes bibliotecas de Python:
+- **Python 3.x**: Lenguaje de programación base (recomendado Python 3.6 o superior).
+- **Tkinter**: Biblioteca estándar de Python para interfaces gráficas (viene incluida con la mayoría de las instalaciones de Python).
+- **tkcalendar**: Biblioteca adicional que proporciona el widget DateEntry para la selección de fechas.
+
+## Instalación de dependencias
+```
+pip install tkcalendar
+```
+
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+from tkcalendar import DateEntry
+import datetime
+
+class AgendaPersonal:
+    def __init__(self, root):
+        """
+        Inicializa la aplicación de agenda personal
+        
+        Args:
+            root: Ventana principal de Tkinter
+        """
+        self.root = root
+        self.root.title("Agenda Personal")
+        self.root.geometry("800x600")
+        self.root.resizable(True, True)
+        
+        # Configurar estilo
+        self.style = ttk.Style()
+        self.style.configure("Treeview", font=('Arial', 10))
+        self.style.configure("TButton", font=('Arial', 10))
+        self.style.configure("TLabel", font=('Arial', 10))
+        
+        # Crear frames para organizar la interfaz
+        self.crear_frames()
+        
+        # Crear componentes de la interfaz
+        self.crear_componentes_visualizacion()
+        self.crear_componentes_entrada()
+        self.crear_componentes_acciones()
+        
+        # Inicializar lista de eventos (podría ser reemplazado por una base de datos)
+        self.eventos = []
+        
+    def crear_frames(self):
+        """Crea y configura los frames para organizar la interfaz"""
+        # Frame para la visualización de eventos
+        self.frame_visualizacion = ttk.LabelFrame(self.root, text="Eventos Programados")
+        self.frame_visualizacion.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Frame para la entrada de datos
+        self.frame_entrada = ttk.LabelFrame(self.root, text="Nuevo Evento")
+        self.frame_entrada.pack(fill=tk.X, padx=10, pady=5)
+        
+        # Frame para las acciones (botones)
+        self.frame_acciones = ttk.Frame(self.root)
+        self.frame_acciones.pack(fill=tk.X, padx=10, pady=10)
+        
+    def crear_componentes_visualizacion(self):
+        """Crea y configura los componentes para visualizar eventos"""
+        # Crear Treeview para mostrar la lista de eventos
+        self.tree = ttk.Treeview(self.frame_visualizacion, columns=("Fecha", "Hora", "Descripción"), show="headings")
+        
+        # Configurar columnas
+        self.tree.heading("Fecha", text="Fecha")
+        self.tree.heading("Hora", text="Hora")
+        self.tree.heading("Descripción", text="Descripción")
+        
+        self.tree.column("Fecha", width=120)
+        self.tree.column("Hora", width=100)
+        self.tree.column("Descripción", width=400)
+        
+        # Agregar scrollbars
+        scrollbar_y = ttk.Scrollbar(self.frame_visualizacion, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar_x = ttk.Scrollbar(self.frame_visualizacion, orient=tk.HORIZONTAL, command=self.tree.xview)
+        self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+        
+        # Organizar componentes
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
+        
+    def crear_componentes_entrada(self):
+        """Crea y configura los componentes para la entrada de datos"""
+        # Crear grid de 3 columnas para organizar los componentes
+        for i in range(3):
+            self.frame_entrada.columnconfigure(i, weight=1)
+        
+        # Componentes para la fecha
+        ttk.Label(self.frame_entrada, text="Fecha:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.date_picker = DateEntry(self.frame_entrada, width=15, background='darkblue',
+                               foreground='white', borderwidth=2, date_pattern='dd/mm/yyyy')
+        self.date_picker.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        # Componentes para la hora
+        ttk.Label(self.frame_entrada, text="Hora (HH:MM):").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.hora_var = tk.StringVar()
+        self.hora_entry = ttk.Entry(self.frame_entrada, textvariable=self.hora_var, width=15)
+        self.hora_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        # Componentes para la descripción
+        ttk.Label(self.frame_entrada, text="Descripción:").grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        self.descripcion_var = tk.StringVar()
+        self.descripcion_entry = ttk.Entry(self.frame_entrada, textvariable=self.descripcion_var, width=50)
+        self.descripcion_entry.grid(row=2, column=1, columnspan=2, padx=5, pady=5, sticky=tk.EW)
+        
+    def crear_componentes_acciones(self):
+        """Crea y configura los botones de acción"""
+        # Botón para agregar evento
+        self.btn_agregar = ttk.Button(self.frame_acciones, text="Agregar Evento", command=self.agregar_evento)
+        self.btn_agregar.pack(side=tk.LEFT, padx=5)
+        
+        # Botón para eliminar evento
+        self.btn_eliminar = ttk.Button(self.frame_acciones, text="Eliminar Evento Seleccionado", command=self.eliminar_evento)
+        self.btn_eliminar.pack(side=tk.LEFT, padx=5)
+        
+        # Botón para salir
+        self.btn_salir = ttk.Button(self.frame_acciones, text="Salir", command=self.root.quit)
+        self.btn_salir.pack(side=tk.RIGHT, padx=5)
+        
+    def agregar_evento(self):
+        """Agrega un nuevo evento a la lista y lo muestra en el Treeview"""
+        # Obtener datos de los campos de entrada
+        try:
+            fecha = self.date_picker.get_date()
+            fecha_str = fecha.strftime("%d/%m/%Y")
+            
+            hora = self.hora_var.get()
+            # Validar formato de hora (HH:MM)
+            if not self.validar_formato_hora(hora):
+                messagebox.showerror("Error", "Formato de hora incorrecto. Use HH:MM (por ejemplo, 14:30)")
+                return
+                
+            descripcion = self.descripcion_var.get()
+            
+            # Validar que la descripción no esté vacía
+            if not descripcion:
+                messagebox.showerror("Error", "La descripción no puede estar vacía")
+                return
+                
+            # Agregar evento a la lista
+            nuevo_evento = {
+                "fecha": fecha,
+                "fecha_str": fecha_str,
+                "hora": hora,
+                "descripcion": descripcion
+            }
+            
+            self.eventos.append(nuevo_evento)
+            
+            # Actualizar Treeview
+            self.tree.insert("", tk.END, values=(fecha_str, hora, descripcion))
+            
+            # Limpiar campos de entrada
+            self.hora_var.set("")
+            self.descripcion_var.set("")
+            
+            messagebox.showinfo("Éxito", "Evento agregado correctamente")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo agregar el evento: {str(e)}")
+    
+    def eliminar_evento(self):
+        """Elimina el evento seleccionado en el Treeview"""
+        # Obtener ítem seleccionado
+        seleccion = self.tree.selection()
+        
+        if not seleccion:
+            messagebox.showwarning("Advertencia", "No se ha seleccionado ningún evento para eliminar")
+            return
+            
+        # Mostrar diálogo de confirmación
+        if messagebox.askyesno("Confirmar eliminación", "¿Está seguro de que desea eliminar el evento seleccionado?"):
+            # Obtener valores del ítem seleccionado
+            valores = self.tree.item(seleccion)["values"]
+            
+            # Eliminar de la lista de eventos (en una aplicación real, se eliminaría de la base de datos)
+            for i, evento in enumerate(self.eventos):
+                if evento["fecha_str"] == valores[0] and evento["hora"] == valores[1] and evento["descripcion"] == valores[2]:
+                    del self.eventos[i]
+                    break
+                    
+            # Eliminar del Treeview
+            self.tree.delete(seleccion)
+            
+            messagebox.showinfo("Éxito", "Evento eliminado correctamente")
+    
+    def validar_formato_hora(self, hora):
+        """
+        Valida que la hora tenga el formato HH:MM
+        
+        Args:
+            hora: String con la hora a validar
+            
+        Returns:
+            bool: True si el formato es correcto, False en caso contrario
+        """
+        try:
+            # Comprobar formato
+            if len(hora) != 5 or hora[2] != ':':
+                return False
+                
+            # Comprobar que las partes sean números
+            horas, minutos = hora.split(':')
+            if not (horas.isdigit() and minutos.isdigit()):
+                return False
+                
+            # Comprobar rangos
+            horas_int = int(horas)
+            minutos_int = int(minutos)
+            
+            if not (0 <= horas_int <= 23 and 0 <= minutos_int <= 59):
+                return False
+                
+            return True
+        except:
+            return False
+
+# Ejecutar la aplicación
+if __name__ == "__main__":
+    # Crear ventana principal
+    root = tk.Tk()
+    
+    # Verificar si tkcalendar está instalado
+    try:
+        # Si ya se importó tkcalendar, este bloque no hará nada
+        pass
+    except ImportError:
+        messagebox.showerror("Error", "La biblioteca tkcalendar no está instalada. Por favor, instálela con 'pip install tkcalendar'")
+        root.quit()
+    
+    # Crear instancia de la aplicación
+    app = AgendaPersonal(root)
+    
+    # Iniciar el bucle principal
+    root.mainloop()
