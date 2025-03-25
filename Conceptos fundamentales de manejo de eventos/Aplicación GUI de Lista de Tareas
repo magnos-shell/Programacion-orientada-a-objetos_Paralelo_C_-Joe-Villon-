@@ -1,0 +1,192 @@
+"""
+Aplicación de Gestión de Tareas (To-Do List)
+
+Descripción:
+------------
+Esta aplicación es una interfaz gráfica de usuario (GUI) desarrollada con Tkinter que 
+permite a los usuarios gestionar una lista de tareas de manera simple e intuitiva.
+
+Funcionalidades Principales:
+---------------------------
+1. Añadir Tareas:
+   - Los usuarios pueden introducir tareas mediante un campo de entrada
+   - Métodos de entrada: 
+     * Botón "Añadir"
+     * Tecla Enter
+
+2. Gestión de Tareas:
+   - Marcar tareas como completadas
+     * Doble clic sobre la tarea
+     * Botón "Marcar Completada"
+   - Eliminar tareas seleccionadas
+     * Botón "Eliminar"
+
+3. Características de la Interfaz:
+   - Listbox para visualizar tareas
+   - Diseño responsivo
+   - Manejo de errores con mensajes emergentes
+   - Estilos personalizados para mejorar la experiencia de usuario
+
+Estructura del Código:
+--------------------
+- Clase GestorTareas: Gestiona toda la lógica de la aplicación
+  * Inicialización de la interfaz
+  * Métodos para manipular tareas
+  * Configuración de eventos y widgets
+
+Dependencias:
+-------------
+- tkinter: Biblioteca estándar para crear interfaces gráficas en Python
+- messagebox: Para mostrar mensajes de advertencia
+- font: Para personalizar fuentes de los elementos
+
+"""
+import tkinter as tk
+from tkinter import messagebox, font
+
+class GestorTareas:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Gestor de Tareas")
+        self.root.geometry("500x500")
+
+        # Fuentes personalizadas
+        self.fuente_titulo = font.Font(family="Arial", size=16, weight="bold")
+        self.fuente_lista = font.Font(family="Arial", size=12)
+
+        # Configuración de estilos
+        self.root.configure(bg="#f0f0f0")
+
+        # Crear y configurar elementos de la interfaz
+        self.crear_elementos_interfaz()
+
+        # Lista para almacenar tareas
+        self.tareas = []
+
+    def crear_elementos_interfaz(self):
+        # Título de la aplicación
+        titulo = tk.Label(
+            self.root, 
+            text="Mi Lista de Tareas", 
+            font=self.fuente_titulo, 
+            bg="#f0f0f0", 
+            fg="#333333"
+        )
+        titulo.pack(pady=10)
+
+        # Marco para entrada y botones
+        marco_entrada = tk.Frame(self.root, bg="#f0f0f0")
+        marco_entrada.pack(pady=10, padx=20, fill=tk.X)
+
+        # Campo de entrada de tareas
+        self.entrada_tarea = tk.Entry(
+            marco_entrada, 
+            font=self.fuente_lista, 
+            width=40
+        )
+        self.entrada_tarea.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 10))
+        
+        # Enlazar tecla Enter con añadir tarea
+        self.entrada_tarea.bind('<Return>', self.agregar_tarea)
+
+        # Botón de añadir tarea
+        boton_agregar = tk.Button(
+            marco_entrada, 
+            text="Añadir", 
+            command=self.agregar_tarea,
+            bg="#4CAF50",
+            fg="white"
+        )
+        boton_agregar.pack(side=tk.RIGHT)
+
+        # Lista de tareas (Listbox)
+        self.lista_tareas = tk.Listbox(
+            self.root, 
+            font=self.fuente_lista, 
+            selectmode=tk.SINGLE,
+            width=60,
+            height=15
+        )
+        self.lista_tareas.pack(pady=10, padx=20, expand=True, fill=tk.BOTH)
+
+        # Doble clic para marcar como completada
+        self.lista_tareas.bind('<Double-1>', self.marcar_completada)
+
+        # Marco para botones de acción
+        marco_botones = tk.Frame(self.root, bg="#f0f0f0")
+        marco_botones.pack(pady=10, padx=20, fill=tk.X)
+
+        # Botón Marcar Completada
+        boton_completar = tk.Button(
+            marco_botones, 
+            text="Marcar Completada", 
+            command=self.marcar_completada,
+            bg="#2196F3",
+            fg="white"
+        )
+        boton_completar.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Botón Eliminar Tarea
+        boton_eliminar = tk.Button(
+            marco_botones, 
+            text="Eliminar", 
+            command=self.eliminar_tarea,
+            bg="#f44336",
+            fg="white"
+        )
+        boton_eliminar.pack(side=tk.LEFT)
+
+    def agregar_tarea(self, event=None):
+        tarea = self.entrada_tarea.get().strip()
+        if tarea:
+            self.tareas.append({"texto": tarea, "completada": False})
+            self.lista_tareas.insert(tk.END, tarea)
+            self.entrada_tarea.delete(0, tk.END)
+        else:
+            messagebox.showwarning("Advertencia", "Por favor, ingrese una tarea")
+
+    def marcar_completada(self, event=None):
+        try:
+            # Si se llama desde doble clic, usar la selección del evento
+            if event:
+                indice = self.lista_tareas.nearest(event.y)
+            else:
+                # Si se llama desde el botón, usar la selección actual
+                indice = self.lista_tareas.curselection()[0]
+
+            # Cambiar el aspecto de la tarea
+            tarea = self.lista_tareas.get(indice)
+            if not tarea.startswith("✓ "):
+                self.lista_tareas.delete(indice)
+                self.lista_tareas.insert(indice, f"✓ {tarea}")
+                self.tareas[indice]["completada"] = True
+            else:
+                # Desmarcar si ya está completada
+                self.lista_tareas.delete(indice)
+                self.lista_tareas.insert(indice, tarea[2:])
+                self.tareas[indice]["completada"] = False
+
+        except IndexError:
+            messagebox.showwarning("Advertencia", "Seleccione una tarea")
+
+    def eliminar_tarea(self):
+        try:
+            # Obtener el índice de la tarea seleccionada
+            indice = self.lista_tareas.curselection()[0]
+            
+            # Eliminar de la lista visual
+            self.lista_tareas.delete(indice)
+            
+            # Eliminar de la lista de tareas
+            del self.tareas[indice]
+
+        except IndexError:
+            messagebox.showwarning("Advertencia", "Seleccione una tarea para eliminar")
+
+def main():
+    root = tk.Tk()
+    app = GestorTareas(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
