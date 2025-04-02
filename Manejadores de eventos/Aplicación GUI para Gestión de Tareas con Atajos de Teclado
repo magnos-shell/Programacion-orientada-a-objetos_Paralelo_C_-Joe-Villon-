@@ -1,0 +1,187 @@
+# Aplicación de Gestión de Tareas con Tkinter
+#
+# Esta aplicación permite:
+# - Añadir nuevas tareas mediante un campo de entrada
+# - Marcar tareas como completadas o pendientes
+# - Eliminar tareas seleccionadas
+# - Visualizar tareas con diferenciación por estado (completada/pendiente)
+#
+# Características principales:
+# - Interfaz gráfica creada con Tkinter
+# - Control mediante botones y atajos de teclado:
+#   * Enter: Añadir tarea
+#   * C: Marcar/desmarcar como completada
+#   * D/Delete: Eliminar tarea
+#   * Escape: Cerrar aplicación
+# - Persistencia de datos en archivo JSON
+# - Feedback visual mediante colores y mensajes informativos
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import json
+import os
+
+class AplicacionTareas:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Gestor de Tareas Pendientes")
+        self.root.geometry("500x400")
+        self.root.configure(bg="#f0f0f0")
+        
+        # Cargar tareas guardadas o inicializar lista vacía
+        self.tareas = self.cargar_tareas()
+        
+        # Configurar el estilo
+        self.configurar_estilo()
+        
+        # Crear widgets
+        self.crear_widgets()
+        
+        # Configurar atajos de teclado
+        self.configurar_atajos()
+        
+    def configurar_estilo(self):
+        estilo = ttk.Style()
+        estilo.configure("TFrame", background="#f0f0f0")
+        estilo.configure("TLabel", background="#f0f0f0", font=("Arial", 12))
+        estilo.configure("TButton", font=("Arial", 10), padding=5)
+        estilo.configure("Completada.TLabel", foreground="#008000", font=("Arial", 12))
+        estilo.configure("Pendiente.TLabel", foreground="#000000", font=("Arial", 12))
+        
+    def crear_widgets(self):
+        # Frame principal
+        self.frame_principal = ttk.Frame(self.root)
+        self.frame_principal.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Etiqueta para el título
+        ttk.Label(self.frame_principal, text="Lista de Tareas", font=("Arial", 16, "bold")).pack(pady=10)
+        
+        # Frame para entrada y botón de añadir
+        self.frame_entrada = ttk.Frame(self.frame_principal)
+        self.frame_entrada.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(self.frame_entrada, text="Nueva tarea:").pack(side=tk.LEFT, padx=5)
+        
+        self.entrada_tarea = ttk.Entry(self.frame_entrada, width=40)
+        self.entrada_tarea.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        self.entrada_tarea.focus()
+        
+        self.boton_anadir = ttk.Button(self.frame_entrada, text="Añadir", command=self.anadir_tarea)
+        self.boton_anadir.pack(side=tk.RIGHT, padx=5)
+        
+        # Frame para la lista de tareas
+        self.frame_lista = ttk.Frame(self.frame_principal)
+        self.frame_lista.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        # Crear un Treeview para mostrar las tareas
+        self.tabla_tareas = ttk.Treeview(self.frame_lista, columns=("estado",), show="tree")
+        self.tabla_tareas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configurar columnas
+        self.tabla_tareas.column("#0", width=400, minwidth=200)
+        self.tabla_tareas.column("estado", width=0, stretch=tk.NO)
+        
+        # Agregar scrollbar
+        scrollbar = ttk.Scrollbar(self.frame_lista, orient=tk.VERTICAL, command=self.tabla_tareas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tabla_tareas.configure(yscrollcommand=scrollbar.set)
+        
+        # Frame para botones de acción
+        self.frame_botones = ttk.Frame(self.frame_principal)
+        self.frame_botones.pack(fill=tk.X, pady=5)
+        
+        self.boton_completar = ttk.Button(self.frame_botones, text="Completar (C)", command=self.completar_tarea)
+        self.boton_completar.pack(side=tk.LEFT, padx=5)
+        
+        self.boton_eliminar = ttk.Button(self.frame_botones, text="Eliminar (D)", command=self.eliminar_tarea)
+        self.boton_eliminar.pack(side=tk.LEFT, padx=5)
+        
+        # Etiqueta para mostrar atajos de teclado
+        ttk.Label(self.frame_principal, text="Atajos: Enter (Añadir), C (Completar), D (Eliminar), Esc (Salir)", 
+                 font=("Arial", 9)).pack(side=tk.BOTTOM, pady=5)
+        
+        # Cargar tareas en la tabla
+        self.actualizar_tabla()
+        
+    def configurar_atajos(self):
+        # Configurar atajos de teclado
+        self.root.bind("<Return>", lambda event: self.anadir_tarea())
+        self.root.bind("c", lambda event: self.completar_tarea())
+        self.root.bind("C", lambda event: self.completar_tarea())
+        self.root.bind("<Delete>", lambda event: self.eliminar_tarea())
+        self.root.bind("d", lambda event: self.eliminar_tarea())
+        self.root.bind("D", lambda event: self.eliminar_tarea())
+        self.root.bind("<Escape>", lambda event: self.root.destroy())
+        
+    def anadir_tarea(self):
+        texto_tarea = self.entrada_tarea.get().strip()
+        if texto_tarea:
+            nueva_tarea = {"texto": texto_tarea, "completada": False}
+            self.tareas.append(nueva_tarea)
+            self.entrada_tarea.delete(0, tk.END)
+            self.actualizar_tabla()
+            self.guardar_tareas()
+        else:
+            messagebox.showwarning("Aviso", "Por favor, ingrese una tarea.")
+    
+    def completar_tarea(self):
+        seleccion = self.tabla_tareas.selection()
+        if seleccion:
+            indice = int(seleccion[0])
+            self.tareas[indice]["completada"] = not self.tareas[indice]["completada"]
+            self.actualizar_tabla()
+            self.guardar_tareas()
+        else:
+            messagebox.showinfo("Información", "Por favor, seleccione una tarea para marcar como completada.")
+    
+    def eliminar_tarea(self):
+        seleccion = self.tabla_tareas.selection()
+        if seleccion:
+            indice = int(seleccion[0])
+            tarea_eliminada = self.tareas.pop(indice)
+            self.actualizar_tabla()
+            self.guardar_tareas()
+            messagebox.showinfo("Tarea eliminada", f"Se eliminó la tarea: {tarea_eliminada['texto']}")
+        else:
+            messagebox.showinfo("Información", "Por favor, seleccione una tarea para eliminar.")
+    
+    def actualizar_tabla(self):
+        # Limpiar la tabla
+        for item in self.tabla_tareas.get_children():
+            self.tabla_tareas.delete(item)
+        
+        # Agregar tareas a la tabla
+        for i, tarea in enumerate(self.tareas):
+            estado = "Completada" if tarea["completada"] else "Pendiente"
+            
+            # Insertar tarea en la tabla con el índice como ID
+            self.tabla_tareas.insert("", tk.END, text=tarea["texto"], values=(estado,), iid=str(i))
+            
+            # Aplicar estilo según estado
+            if tarea["completada"]:
+                self.tabla_tareas.item(str(i), tags=("completada",))
+            else:
+                self.tabla_tareas.item(str(i), tags=("pendiente",))
+        
+        # Configurar etiquetas para estilos diferentes
+        self.tabla_tareas.tag_configure("completada", foreground="#008000")
+        self.tabla_tareas.tag_configure("pendiente", foreground="#000000")
+    
+    def guardar_tareas(self):
+        with open("tareas.json", "w") as archivo:
+            json.dump(self.tareas, archivo)
+    
+    def cargar_tareas(self):
+        try:
+            if os.path.exists("tareas.json"):
+                with open("tareas.json", "r") as archivo:
+                    return json.load(archivo)
+            return []
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar tareas: {str(e)}")
+            return []
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AplicacionTareas(root)
+    root.mainloop()
